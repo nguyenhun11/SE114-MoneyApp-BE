@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SE114_MoneyApp_BE.Data;
@@ -123,5 +123,77 @@ namespace SE114_MoneyApp_BE.Controllers
 
             return Ok(new { Message = "Tạo tài khoản thành công!", AccountId = newAccount.Id });
         }
+
+        // PUT: api/Account/5
+        /// <summary>
+        /// Cập nhật tài khoản
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        [HttpPut("{id:guid}")]
+        public async Task<IActionResult> UpdateAccount(Guid id, [FromBody] AccountRequest request)
+        {
+            var account = await _context.Accounts
+                .FirstOrDefaultAsync(a => a.Id == id && a.IsActive);
+
+            if (account == null)
+            {
+                return NotFound(new
+                {
+                    Message = "Tài khoản không tồn tại hoặc đã xóa"
+                });
+            }
+
+            account.AccountName = request.AccountName;
+            account.ColorId = request.ColorId;
+            account.IconId = request.IconId;
+            account.Description = request.Description;
+            account.Balance = request.Balance; //TODO: Adjust balance
+            account.IncludeInTotalBalance = request.IncludeInTotalBalance;
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new
+            {
+                Message = "Cập nhật thành công"
+            });
+        }
+
+        // DELETE
+        /// <summary>
+        /// Xóa mềm (ngừng kích hoạt tài khoản)
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        [HttpDelete("{id:guid}")]
+        public async Task<IActionResult> SoftDeleteAccount(Guid id)
+        {
+            var account = await _context.Accounts
+                .FirstOrDefaultAsync(a => a.Id == id && a.IsActive);
+
+            if (account == null)
+            {
+                return NotFound(new
+                {
+                    Message = "Không tìm thấy tài khoản hoặc đã xóa"
+                });
+            }
+
+            account.IsActive = false;
+            await _context.SaveChangesAsync();
+
+            return Ok(new
+            {
+                Message = "Đã xóa"
+            });
+        }
+        /*TODO
+         * Các lựa chọn khi xóa tài khoản:
+         * 1. Xóa các giao dịch liên quan đã phát sinh
+         * 2. Xóa tài khoản nhưng giữ giao dịch
+         *      a. Chuyển tài khoản cần xóa sang một tài khoản khác
+         *      b. Xóa mềm, vẫn hiển thị giao dịch dùng tài khoản đã xóa
+         */
     }
 }

@@ -8,5 +8,6 @@
         public string? ImageUrl { get; set; }
         public string? PhoneNumber { get; set; }
         public DateTime CreatedAt { get; set; }
+        public DateTime LastUpdatedAt { get; set; }
     }
 }

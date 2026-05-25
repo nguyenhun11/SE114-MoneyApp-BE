@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using SE114_MoneyApp_BE.Data;
 using SE114_MoneyApp_BE.DTOs.User;
 using SE114_MoneyApp_BE.Models;
+using System.Linq.Expressions;
 
 namespace SE114_MoneyApp_BE.Controllers
 {
@@ -17,6 +18,17 @@ namespace SE114_MoneyApp_BE.Controllers
             _context = context;
         }
 
+        private static Expression<Func<User, UserProfileResponse>> MapToUserProfileResponse = user => new UserProfileResponse
+        {
+            Id = user.Id,
+            Name = user.Name,
+            Email = user.Email,
+            ImageUrl = user.ImageUrl,
+            PhoneNumber = user.PhoneNumber,
+            CreatedAt = user.CreatedAt,
+            LastUpdatedAt = user.LastUpdatedAt
+        };
+
         // GET: api/User/5
         /// <summary>
         /// Lấy thông tin người dùng
@@ -28,15 +40,7 @@ namespace SE114_MoneyApp_BE.Controllers
         {
             var userProfile = await _context.Users
                 .Where(u => u.Id == id && u.IsActive == true)
-                .Select(u => new UserProfileResponse
-                {
-                    Id = u.Id,
-                    Name = u.Name,
-                    Email = u.Email,
-                    ImageUrl = u.ImageUrl,
-                    PhoneNumber = u.PhoneNumber,
-                    CreatedAt = u.CreatedAt
-                })
+                .Select(MapToUserProfileResponse)
                 .FirstOrDefaultAsync();
             
             if (userProfile == null)
@@ -82,15 +86,7 @@ namespace SE114_MoneyApp_BE.Controllers
             }
 
             var userProfile = await query
-                .Select(u => new UserProfileResponse
-                {
-                    Id = u.Id,
-                    Name = u.Name,
-                    Email = u.Email,
-                    ImageUrl = u.ImageUrl,
-                    PhoneNumber = u.PhoneNumber,
-                    CreatedAt = u.CreatedAt
-                })
+                .Select(MapToUserProfileResponse)
                 .FirstOrDefaultAsync();
 
             if (userProfile == null)
@@ -101,7 +97,44 @@ namespace SE114_MoneyApp_BE.Controllers
             return Ok(userProfile);
         }
 
+        //GET: api/User
+        /// <summary>
+        /// Lấy mã và email tất cả người dùng hiện tại
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet]
+        public async Task<IActionResult> GetAllUsers()
+        {
+            var totalActive = await _context.Users.CountAsync(u => u.IsActive);
+            var totalDeactive = await _context.Users.CountAsync(u => !u.IsActive);
+
+            var users = await _context.Users
+                .Where(u => u.IsActive)
+                .Select(u => new UserProfileResponse 
+                {
+                    Id = u.Id,
+                    Name = u.Name,
+                    Email = u.Email
+                })
+                .ToListAsync();
+
+            var result = new
+            {
+                TotalActive = totalActive,
+                TotalDeactive = totalDeactive,
+                Users = users
+            };
+
+            return Ok(result);
+        }
+
         // PUT: api/user/{id}
+        /// <summary>
+        /// Sửa đổi thông tin người dùng
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateUser(int id, [FromBody] UserProfileRequest request)
         {
@@ -141,6 +174,11 @@ namespace SE114_MoneyApp_BE.Controllers
         }
 
         // DELETE: api/user/{id}
+        /// <summary>
+        /// Hủy kích hoạt (xóa mềm) người dùng
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeactiveUser(int id)
         {
@@ -152,6 +190,7 @@ namespace SE114_MoneyApp_BE.Controllers
             }
 
             user.IsActive = false;
+            user.LastUpdatedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync();
 
             return Ok(new { Message = "Đã xóa người dùng thành công!" });
