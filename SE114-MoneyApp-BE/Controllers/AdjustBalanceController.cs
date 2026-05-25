@@ -29,9 +29,9 @@ namespace SE114_MoneyApp_BE.Controllers
         [HttpGet("{userId}")]
         public async Task<ActionResult<List<AdjustBalanceResponse>>> GetAdjustBalanceByUserId(
             [FromRoute] int userId,
-            [FromQuery] Guid? accountId,
             [FromQuery] DateTime? startDate,
-            [FromQuery] DateTime? endDate)
+            [FromQuery] DateTime? endDate,
+            [FromQuery] Guid? accountId)
         {
             var query = _context.AdjustBalances
                                 .Include(ab => ab.Account)

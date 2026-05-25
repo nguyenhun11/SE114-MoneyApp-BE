@@ -11,6 +11,7 @@ namespace SE114_MoneyApp_BE.Data
         public DbSet<RefreshToken> RefreshTokens { get; set; }
         public DbSet<Account> Accounts { get; set; }
         public DbSet<AdjustBalance> AdjustBalances { get; set; }
+        public DbSet<Transfer> Transfers { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
