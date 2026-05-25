@@ -11,12 +11,19 @@ namespace SE114_MoneyApp_BE.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class AccountController : ControllerBase
     {
         private readonly AppDbContext _context;
         public AccountController(AppDbContext context)
         {
             _context = context;
+        }
+
+        private int GetCurrentUserId()
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            return string.IsNullOrEmpty(userIdClaim) ? 0 : int.Parse(userIdClaim);
         }
 
         private static Expression<Func<Account, AccountResponse>> MapToAccountResponse = account => new AccountResponse
@@ -34,11 +41,12 @@ namespace SE114_MoneyApp_BE.Controllers
         /// <summary>
         /// Lấy tất cả tài khoản người dùng
         /// </summary>
-        /// <param name="userId"></param>
         /// <returns></returns>
-        [HttpGet("{userId}")]
-        public async Task<ActionResult<List<AccountResponse>>> GetAccountsByUserId([FromRoute] int userId)
+        [HttpGet]
+        public async Task<ActionResult<List<AccountResponse>>> GetAccounts()
         {
+            int userId = GetCurrentUserId();
+
             var accounts = await _context.Accounts
                 .Where(a => a.UserId == userId && a.IsActive == true)
                 .Select(MapToAccountResponse)
@@ -77,9 +85,11 @@ namespace SE114_MoneyApp_BE.Controllers
         /// </summary>
         /// <param name="userId"></param>
         /// <returns></returns>
-        [HttpGet("{userId}/total-balance")]
-        public async Task<ActionResult<decimal>> GetTotalBalanceByUserId([FromRoute] int userId)
+        [HttpGet("total-balance")]
+        public async Task<ActionResult<decimal>> GetTotalBalanceByUserId()
         {
+            int userId = GetCurrentUserId();
+
             var totalBalance = await _context.Accounts
                 .Where(a => a.UserId == userId && a.IsActive == true && a.IncludeInTotalBalance == true)
                 .SumAsync(a => a.Balance);
@@ -93,16 +103,9 @@ namespace SE114_MoneyApp_BE.Controllers
         /// <param name="request"></param>
         /// <returns></returns>
         [HttpPost]
-        [Authorize]
         public async Task<IActionResult> CreateAccount([FromBody] AccountRequest request)
         {
-            // Tự động lấy UserId từ trong JWT Token của người đang gọi API
-            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userIdClaim))
-            {
-                return Unauthorized(new { Message = "Phiên đăng nhập không hợp lệ." });
-            }
-            int userId = int.Parse(userIdClaim);
+            int userId = GetCurrentUserId();
 
             var newAccount = new Account
             {
@@ -134,12 +137,14 @@ namespace SE114_MoneyApp_BE.Controllers
         [HttpPut("{id:guid}")]
         public async Task<IActionResult> UpdateAccount(Guid id, [FromBody] AccountRequest request)
         {
+            int userId = GetCurrentUserId();
+
             var account = await _context.Accounts
-                .FirstOrDefaultAsync(a => a.Id == id && a.IsActive);
+                .FirstOrDefaultAsync(a => a.Id == id && a.UserId == userId && a.IsActive);
 
             if (account == null)
             {
-                return NotFound(new { Message = "Tài khoản không tồn tại hoặc đã bị xóa" });
+                return NotFound(new { Message = "Tài khoản không tồn tại hoặc bạn không có quyền chỉnh sửa" });
             }
 
             account.AccountName = request.AccountName;
@@ -180,14 +185,16 @@ namespace SE114_MoneyApp_BE.Controllers
         [HttpDelete("{id:guid}")]
         public async Task<IActionResult> SoftDeleteAccount(Guid id)
         {
+            int userId = GetCurrentUserId();
+
             var account = await _context.Accounts
-                .FirstOrDefaultAsync(a => a.Id == id && a.IsActive);
+                .FirstOrDefaultAsync(a => a.Id == id && a.UserId == userId && a.IsActive);
 
             if (account == null)
             {
                 return NotFound(new
                 {
-                    Message = "Không tìm thấy tài khoản hoặc đã xóa"
+                    Message = "Không tìm thấy tài khoản hoặc bạn không có quyền xóa"
                 });
             }
 

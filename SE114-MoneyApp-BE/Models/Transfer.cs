@@ -6,7 +6,7 @@ namespace SE114_MoneyApp_BE.Models
     public class Transfer
     {
         [Key]
-        public Guid Id { get; set; } = new Guid();
+        public Guid Id { get; set; } = Guid.NewGuid();
         public Guid SourceAccountId { get; set; }
         public Guid DestinationAccountId { get; set; }
         [Column(TypeName = "decimal(18,2)")] public decimal Amount { get; set; }

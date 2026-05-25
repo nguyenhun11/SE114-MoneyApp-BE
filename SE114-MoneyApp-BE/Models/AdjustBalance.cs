@@ -6,7 +6,7 @@ namespace SE114_MoneyApp_BE.Models
     public class AdjustBalance
     {
         [Key]
-        public Guid Id { get; set; } = new Guid();
+        public Guid Id { get; set; } = Guid.NewGuid();
         public Guid AccountId { get; set; }
 
         [Column(TypeName = "decimal(18,2)")]

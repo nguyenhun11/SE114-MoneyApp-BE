@@ -27,7 +27,7 @@ namespace SE114_MoneyApp_BE.Controllers
         /// <param name="endDate"></param>
         /// <returns></returns>
         [HttpGet("{userId}")]
-        public async Task<ActionResult<List<AdjustBalanceResponse>>> GetAdjustBalanceByUserId(
+        public async Task<ActionResult<List<AdjustBalanceResponse>>> GetAdjustBalances(
             [FromRoute] int userId,
             [FromQuery] DateTime? startDate,
             [FromQuery] DateTime? endDate,
