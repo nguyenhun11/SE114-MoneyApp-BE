@@ -12,7 +12,9 @@ namespace SE114_MoneyApp_BE.Models
         [Column(TypeName = "decimal(18,2)")]
         public decimal Amount { get; set; }
 
-        public DateTime CreatedAt = DateTime.UtcNow;
-        public DateTime LaseUpdatedAt = DateTime.UtcNow;
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        [ForeignKey("AccountId")]
+        public virtual Account? Account { get; set; }
     }
 }

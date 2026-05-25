@@ -139,24 +139,35 @@ namespace SE114_MoneyApp_BE.Controllers
 
             if (account == null)
             {
-                return NotFound(new
-                {
-                    Message = "Tài khoản không tồn tại hoặc đã xóa"
-                });
+                return NotFound(new { Message = "Tài khoản không tồn tại hoặc đã bị xóa" });
             }
 
             account.AccountName = request.AccountName;
             account.ColorId = request.ColorId;
             account.IconId = request.IconId;
             account.Description = request.Description;
-            account.Balance = request.Balance; //TODO: Adjust balance
             account.IncludeInTotalBalance = request.IncludeInTotalBalance;
+            account.LastUpdatedAt = DateTime.UtcNow; 
+
+            if (account.Balance != request.Balance)
+            {
+                decimal amountDifference = request.Balance - account.Balance;
+
+                var adjustBalance = new AdjustBalance
+                {
+                    AccountId = account.Id,
+                    Amount = amountDifference
+                };
+
+                _context.AdjustBalances.Add(adjustBalance);
+                account.Balance = request.Balance;
+            }
 
             await _context.SaveChangesAsync();
 
             return Ok(new
             {
-                Message = "Cập nhật thành công"
+                Message = "Cập nhật tài khoản thành công"
             });
         }
 
