@@ -10,6 +10,7 @@ namespace SE114_MoneyApp_BE.Data
         }
         
         public DbSet<User> Users { get; set; }
+        public DbSet<RefreshToken> RefreshTokens { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
