@@ -1,0 +1,3 @@
+[submodule "Front-end"]
+	path = SE114-MoneyApp-FE
+	url = https://github.com/nguyenhun11/SE114-MoneyApp-FE
