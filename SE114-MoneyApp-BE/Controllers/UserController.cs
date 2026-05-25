@@ -17,6 +17,12 @@ namespace SE114_MoneyApp_BE.Controllers
             _context = context;
         }
 
+        // GET: api/User/5
+        /// <summary>
+        /// Lấy thông tin người dùng
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
         [HttpGet("{id}")]
         public async Task<ActionResult<UserProfileResponse>> GetUserById([FromRoute] int id)
         {
@@ -46,7 +52,13 @@ namespace SE114_MoneyApp_BE.Controllers
             }
         }
 
-        // GET: api/user/search?email=... hoặc api/user/search?phone=...
+        // GET: api/User/search?email=... hoặc api/user/search?phone=...
+        /// <summary>
+        /// Tìm thông tin người dùng theo email hoặc số điện thoại
+        /// </summary>
+        /// <param name="email"></param>
+        /// <param name="phone"></param>
+        /// <returns></returns>
         [HttpGet("search")]
         public async Task<ActionResult<UserProfileResponse>> SearchUser(
             [FromQuery] string? email,
@@ -121,6 +133,7 @@ namespace SE114_MoneyApp_BE.Controllers
             user.Email = request.Email;
             user.ImageUrl = request.ImageUrl;
             user.PhoneNumber = request.PhoneNumber;
+            user.LastUpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
 

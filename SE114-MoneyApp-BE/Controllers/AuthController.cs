@@ -25,6 +25,11 @@ namespace SE114_MoneyApp_BE.Controllers
         }
 
         // POST: api/auth/register
+        /// <summary>
+        /// Đăng ký bằng email
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
         [HttpPost("register")]
         public async Task<ActionResult> Register([FromBody] RegisterRequest request)
         {
@@ -63,6 +68,11 @@ namespace SE114_MoneyApp_BE.Controllers
         }
 
         // POST: api/auth/login
+        /// <summary>
+        /// Đăng nhập bằng email
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
         [HttpPost("login")]
         public async Task<ActionResult<AuthResponse>> Login([FromBody] LoginRequest request)
         {
@@ -105,6 +115,11 @@ namespace SE114_MoneyApp_BE.Controllers
         }
 
         // POST: api/auth/google-login
+        /// <summary>
+        /// Đăng nhập - đăng ký tài khoản bằng Google
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
         [HttpPost("google-login")]
         public async Task<ActionResult<AuthResponse>> GoogleLogin([FromBody] GoogleLoginRequest request)
         {
