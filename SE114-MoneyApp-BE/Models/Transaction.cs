@@ -10,7 +10,7 @@ namespace SE114_MoneyApp_BE.Models
         public Guid AccountId { get; set; }
         public Guid CategoryId { get; set; }
         [Column(TypeName = "decimal(18,2)")] public decimal Amount { get; set; }
-        public DateTime Date { get; set; }
+        public DateTime TransactionDate { get; set; }
         public string Note { get; set; } = string.Empty;
         public List<string> ImageUrls { get; set; } = new List<string>();
 

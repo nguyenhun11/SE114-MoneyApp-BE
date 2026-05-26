@@ -33,8 +33,8 @@ namespace SE114_MoneyApp_BE.Controllers
         [HttpGet]
         public async Task<ActionResult<UserProfileResponse>> GetUser()
         {
-            var (userId, sucess, message) = GetCurrentUserId();
-            if (!sucess)
+            var (userId, success, message) = GetCurrentUserId();
+            if (!success)
             {
                 return Unauthorized(new { Message = message });
             }
@@ -77,6 +77,10 @@ namespace SE114_MoneyApp_BE.Controllers
             }
 
             var query = _context.Users.Where(u => u.IsActive);
+            if (!id.HasValue && string.IsNullOrEmpty(email) && string.IsNullOrEmpty(phone))
+            {
+                return BadRequest(new { Message = "Vui lòng cung cấp ít nhất ID, Email hoặc Số điện thoại." });
+            }
             if (id.HasValue)
             {
                 query = query.Where(u => u.Id == id.Value);
@@ -184,7 +188,7 @@ namespace SE114_MoneyApp_BE.Controllers
             return Ok(new { Message = "Cập nhật thông tin thành công!" });
         }
 
-        // DELETE: api/user/{id}
+        // DELETE: api/user
         /// <summary>
         /// Hủy kích hoạt (xóa mềm) người dùng hiện tại
         /// </summary>

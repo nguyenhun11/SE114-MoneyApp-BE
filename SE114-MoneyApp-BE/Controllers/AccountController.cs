@@ -42,7 +42,7 @@ namespace SE114_MoneyApp_BE.Controllers
             }
 
             var accounts = await _context.Accounts
-                .Where(a => a.UserId == userId && a.IsActive == true)
+                .Where(a => a.UserId == userId && a.IsActive)
                 .Select(MapToAccountResponse)
                 .ToListAsync();
 
@@ -51,15 +51,21 @@ namespace SE114_MoneyApp_BE.Controllers
 
         // GET: api/account/....
         /// <summary>
-        /// (*) Lấy chi tiết 1 tài khoản
+        /// Lấy chi tiết 1 tài khoản
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
         [HttpGet("{id:guid}")]
         public async Task<ActionResult<AccountResponse>> GetAccountById([FromRoute] Guid id)
         {
+            var (userId, success, message) = GetCurrentUserId();
+            if (!success)
+            {
+                return Unauthorized(new { Message = message });
+            }
+
             var account = await _context.Accounts
-                .Where(a => a.Id == id && a.IsActive)
+                .Where(a => a.Id == id && a.UserId == userId && a.IsActive)
                 .Select(MapToAccountResponse)
                 .FirstOrDefaultAsync();
             if (account == null)
@@ -78,7 +84,7 @@ namespace SE114_MoneyApp_BE.Controllers
         /// </summary>
         /// <returns></returns>
         [HttpGet("total-balance")]
-        public async Task<ActionResult<decimal>> GetTotalBalanceByUserId()
+        public async Task<ActionResult<decimal>> GetTotalBalance()
         {
             var (userId, success, message) = GetCurrentUserId();
             if (!success)
@@ -87,7 +93,7 @@ namespace SE114_MoneyApp_BE.Controllers
             }
 
             var totalBalance = await _context.Accounts
-                .Where(a => a.UserId == userId && a.IsActive == true && a.IncludeInTotalBalance == true)
+                .Where(a => a.UserId == userId && a.IsActive && a.IncludeInTotalBalance)
                 .SumAsync(a => a.Balance);
             return Ok(totalBalance);
         }

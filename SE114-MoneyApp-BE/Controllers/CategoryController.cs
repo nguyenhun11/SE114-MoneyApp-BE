@@ -40,7 +40,7 @@ namespace SE114_MoneyApp_BE.Controllers
 
             var categories = await _context.Categories
                 .Where(c => c.Type == type && c.UserId == userId && c.IsActive)
-                .OrderByDescending(c => c.SortingOrder)
+                .OrderBy(c => c.SortingOrder)
                 .Select(MapToCategoryResponse)
                 .ToListAsync();
 
@@ -68,22 +68,27 @@ namespace SE114_MoneyApp_BE.Controllers
         [HttpGet("income")]
         public async Task<ActionResult<List<CategoryResponse>>> GetIncomeCategories()
         {
-            var expenseCategories = await GetCategories(Category.CategoryType.Income);
+            var incomeCategories = await GetCategories(Category.CategoryType.Income);
 
-            return Ok(expenseCategories);
+            return Ok(incomeCategories);
         }
 
         // GET: api/Category/...
         /// <summary>
-        /// (*) Chi tiết một hạng mục theo Id
+        /// Chi tiết một hạng mục theo Id
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
         [HttpGet("{id:guid}")]
         public async Task<ActionResult<CategoryResponse>> GetCategoryById(Guid id)
         {
+            var (userId, success, message) = GetCurrentUserId();
+            if (!success)
+            {
+                return Unauthorized(new { Message = message });
+            }
             var category = await _context.Categories
-                .Where(c => c.Id == id && c.IsActive)
+                .Where(c => c.Id == id && c.UserId == userId && c.IsActive)
                 .Select(MapToCategoryResponse)
                 .FirstOrDefaultAsync();
 
@@ -141,7 +146,6 @@ namespace SE114_MoneyApp_BE.Controllers
         /// <param name="request"></param>
         /// <returns></returns>
         [HttpPost("expense")]
-        [Authorize]
         public async Task<IActionResult> CreateExpenseCategory([FromBody] CategoryRequest request)
         {
             return await CreateCategory(request, Category.CategoryType.Expense, "Tạo hạng mục chi tiêu thành công");
@@ -154,7 +158,6 @@ namespace SE114_MoneyApp_BE.Controllers
         /// <param name="request"></param>
         /// <returns></returns>
         [HttpPost("income")]
-        [Authorize]
         public async Task<IActionResult> CreateIncomeCategory([FromBody] CategoryRequest request)
         {
             return await CreateCategory(request, Category.CategoryType.Income, "Tạo hạng mục thu nhập thành công");

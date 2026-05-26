@@ -22,7 +22,7 @@ namespace SE114_MoneyApp_BE.Controllers
             CategoryId = t.CategoryId,
             CategoryName = t.Category != null ? t.Category.CategoryName : string.Empty,
             Amount = t.Amount,
-            Date = t.Date,
+            Date = t.TransactionDate,
             Note = t.Note,
             ImageUrls = t.ImageUrls,
             CreatedAt = t.CreatedAt,
@@ -52,16 +52,19 @@ namespace SE114_MoneyApp_BE.Controllers
             }
 
             var query = _context.Transactions
+                .Include(t => t.Account)
+                .Include(t => t.Category)
                 .Where(t => t.Account!.UserId == userId)
                 .AsQueryable();
 
             if (startDate.HasValue)
             {
-                query = query.Where(t => t.Date >= startDate.Value);
+                query = query.Where(t => t.TransactionDate >= startDate.Value.Date);
             }
             if (endDate.HasValue)
             {
-                query = query.Where(t => t.Date <= endDate.Value);
+                var endOfDay = endDate.Value.Date.AddDays(1).AddTicks(-1);
+                query = query.Where(t => t.TransactionDate <= endOfDay);
             }
             if (categoryType.HasValue && categoryType.Value != Category.CategoryType.All)
             {
@@ -77,7 +80,7 @@ namespace SE114_MoneyApp_BE.Controllers
             }
 
             var transactions = await query
-                .OrderByDescending(t => t.Date)
+                .OrderByDescending(t => t.TransactionDate)
                 .Select(MapToTransactionResponse)
                 .ToListAsync();
 
@@ -92,7 +95,15 @@ namespace SE114_MoneyApp_BE.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<TransactionResponse>> GetTransactionById(Guid id)
         {
+            var (userId, success, message) = GetCurrentUserId();
+            if (!success)
+            {
+                return Unauthorized(message);
+            }
+
             var transaciton = await _context.Transactions
+                .Include(t => t.Account)
+                .Include(t => t.Category)
                 .Where(t => t.Id == id)
                 .Select(MapToTransactionResponse)
                 .FirstOrDefaultAsync();
@@ -135,7 +146,7 @@ namespace SE114_MoneyApp_BE.Controllers
                 AccountId = request.AccountId,
                 CategoryId = request.CategoryId,
                 Amount = request.Amount,
-                Date = request.Date,
+                TransactionDate = request.Date,
                 Note = request.Note,
                 ImageUrls = request.ImageUrls
             };
@@ -213,7 +224,7 @@ namespace SE114_MoneyApp_BE.Controllers
 
             transaction.AccountId = request.AccountId;
             transaction.CategoryId = request.CategoryId;
-            transaction.Date = request.Date;
+            transaction.TransactionDate = request.Date;
             transaction.Note = request.Note;
             transaction.ImageUrls = request.ImageUrls;
             transaction.LastUpdatedAt = DateTime.UtcNow;
@@ -246,29 +257,26 @@ namespace SE114_MoneyApp_BE.Controllers
             {
                 return Unauthorized(message);
             }
+
             var transaction = await _context.Transactions
-                .Where(t => t.Id == id && t.Account!.UserId == userId)
-                .FirstOrDefaultAsync();
+                .Include(t => t.Account)
+                .Include(t => t.Category)
+                .FirstOrDefaultAsync(t => t.Id == id && t.Account!.UserId == userId);
             if (transaction == null)
             {
                 return NotFound("Không tìm thấy giao dịch hoặc không có quyền truy cập");
             }
-            var account = await _context.Accounts.FindAsync(transaction.AccountId);
-            var category = await _context.Categories.FindAsync(transaction.CategoryId);
-            if (account != null && category != null)
+
+            switch (transaction.Category!.Type)
             {
-                switch (category.Type)
-                {
-                    case Category.CategoryType.Expense:
-                        account.Balance += transaction.Amount;
-                        break;
-                    case Category.CategoryType.Income:
-                        account.Balance -= transaction.Amount;
-                        break;
-                    default:
-                        return BadRequest("Invalid category type");
-                }
+                case Category.CategoryType.Expense:
+                    transaction.Account!.Balance += transaction.Amount; // Hoàn tiền
+                    break;
+                case Category.CategoryType.Income:
+                    transaction.Account!.Balance -= transaction.Amount;
+                    break;
             }
+
             _context.Transactions.Remove(transaction);
             await _context.SaveChangesAsync();
             return Ok(new { Message = "Xóa thành công" });

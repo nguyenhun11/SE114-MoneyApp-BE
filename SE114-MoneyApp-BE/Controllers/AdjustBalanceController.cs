@@ -45,12 +45,13 @@ namespace SE114_MoneyApp_BE.Controllers
 
             if (startDate.HasValue)
             {
-                query = query.Where(ab => ab.CreatedAt >= startDate.Value);
+                query = query.Where(ab => ab.CreatedAt >= startDate.Value.Date);
             }
 
             if (endDate.HasValue)
             {
-                query = query.Where(ab => ab.CreatedAt <= endDate.Value);
+                var endOfDay = endDate.Value.Date.AddDays(1).AddTicks(-1);
+                query = query.Where(ab => ab.CreatedAt <= endOfDay);
             }
 
             var adjustBalances = await query
