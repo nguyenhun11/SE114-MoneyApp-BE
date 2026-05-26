@@ -88,7 +88,7 @@ namespace SE114_MoneyApp_BE.Controllers
         }
 
         /// <summary>
-        /// (*) Lấy chi tiết 1 giao dịch
+        /// Lấy chi tiết 1 giao dịch
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>

@@ -89,7 +89,7 @@ namespace SE114_MoneyApp_BE.Controllers
 
         // GET: api/Transfer/{id}
         /// <summary>
-        /// (*) Chi tiết chuyển khoản theo Id
+        /// Chi tiết chuyển khoản theo Id
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>

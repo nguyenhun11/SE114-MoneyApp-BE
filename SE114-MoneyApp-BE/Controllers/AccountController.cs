@@ -185,46 +185,122 @@ namespace SE114_MoneyApp_BE.Controllers
             });
         }
 
-        // DELETE
+        // DELETE: api/Account/{id}
         /// <summary>
-        /// Xóa mềm (ngừng kích hoạt tài khoản)
+        /// Xóa tài khoản với 3 tùy chọn xử lý dữ liệu: soft_delete, delete_all, move
         /// </summary>
         /// <param name="id"></param>
+        /// <param name="mode">"soft_delete", "delete_all", "move"</param>
+        /// <param name="fallbackAccountId">ID ví dự phòng khi chọn mode = "move"</param>
         /// <returns></returns>
         [HttpDelete("{id:guid}")]
-        public async Task<IActionResult> SoftDeleteAccount(Guid id)
+        public async Task<IActionResult> DeleteAccount(
+            Guid id,
+            [FromQuery] string mode = "soft_delete",
+            [FromQuery] Guid? fallbackAccountId = null)
         {
             var (userId, success, message) = GetCurrentUserId();
-            if (!success)
-            {
-                return Unauthorized(new { Message = message });
-            }
+            if (!success) return Unauthorized(new { Message = message });
 
-            var account = await _context.Accounts
+            // 1. TÌM VÍ CẦN XÓA
+            var accountToDelete = await _context.Accounts
                 .FirstOrDefaultAsync(a => a.Id == id && a.UserId == userId && a.IsActive);
 
-            if (account == null)
+            if (accountToDelete == null)
             {
-                return NotFound(new
-                {
-                    Message = "Không tìm thấy tài khoản hoặc bạn không có quyền xóa"
-                });
+                return NotFound(new { Message = "Không tìm thấy tài khoản hoặc bạn không có quyền xóa" });
             }
 
-            account.IsActive = false;
+            // 2. LẤY TOÀN BỘ LỊCH SỬ LIÊN QUAN
+            var transactions = await _context.Transactions.Where(t => t.AccountId == id).ToListAsync();
+            var adjustBalances = await _context.AdjustBalances.Where(ab => ab.AccountId == id).ToListAsync();
+
+            // Lấy Transfer và nạp sẵn ví đối tác (Source/Destination) để tiện hoàn tiền
+            var transfersAsSource = await _context.Transfers
+                .Include(t => t.Destination)
+                .Where(t => t.SourceAccountId == id).ToListAsync();
+
+            var transfersAsDest = await _context.Transfers
+                .Include(t => t.Source)
+                .Where(t => t.DestinationAccountId == id).ToListAsync();
+
+            // 3. XỬ LÝ THEO CHẾ ĐỘ
+            switch (mode.ToLower())
+            {
+                case "move":
+                    if (!fallbackAccountId.HasValue || fallbackAccountId.Value == id)
+                    {
+                        return BadRequest(new { Message = "Vui lòng chọn một ví dự phòng hợp lệ để chuyển dữ liệu." });
+                    }
+
+                    var fallbackAccount = await _context.Accounts
+                        .FirstOrDefaultAsync(a => a.Id == fallbackAccountId.Value && a.UserId == userId && a.IsActive);
+
+                    if (fallbackAccount == null)
+                    {
+                        return BadRequest(new { Message = "Ví dự phòng không tồn tại." });
+                    }
+
+                    // A. Chuyển Transactions và AdjustBalances
+                    foreach (var t in transactions) t.AccountId = fallbackAccount.Id;
+                    foreach (var ab in adjustBalances) ab.AccountId = fallbackAccount.Id;
+
+                    // B. Chuyển Transfers và triệt tiêu giao dịch "Tự chuyển cho chính mình"
+                    foreach (var t in transfersAsSource)
+                    {
+                        if (t.DestinationAccountId == fallbackAccount.Id)
+                            _context.Transfers.Remove(t); // Ví A -> Ví B, giờ A nhập vào B => Xóa
+                        else
+                            t.SourceAccountId = fallbackAccount.Id;
+                    }
+                    foreach (var t in transfersAsDest)
+                    {
+                        if (t.SourceAccountId == fallbackAccount.Id)
+                            _context.Transfers.Remove(t); // Ví B -> Ví A, giờ A nhập vào B => Xóa
+                        else
+                            t.DestinationAccountId = fallbackAccount.Id;
+                    }
+
+                    // C. Cộng dồn số dư của ví bị xóa vào ví dự phòng
+                    fallbackAccount.Balance += accountToDelete.Balance;
+                    break;
+
+                case "delete_all":
+                    // A. Xóa sạch Transactions và AdjustBalances
+                    _context.Transactions.RemoveRange(transactions);
+                    _context.AdjustBalances.RemoveRange(adjustBalances);
+
+                    // B. Hoàn tiền cho các ví đối tác trong Transfer trước khi xóa
+                    foreach (var t in transfersAsSource)
+                    {
+                        // Tiền đi từ Ví A (bị xóa) đến Ví B. Giờ xóa giao dịch -> B mất tiền
+                        t.Destination!.Balance -= t.Amount;
+                    }
+                    _context.Transfers.RemoveRange(transfersAsSource);
+
+                    foreach (var t in transfersAsDest)
+                    {
+                        // Tiền đi từ Ví B đến Ví A (bị xóa). Giờ xóa giao dịch -> B lấy lại tiền
+                        t.Source!.Balance += t.Amount;
+                    }
+                    _context.Transfers.RemoveRange(transfersAsDest);
+                    break;
+
+                case "soft_delete":
+                default:
+                    break;
+            }
+
+            // 4. Xóa mềm
+            accountToDelete.IsActive = false;
+            accountToDelete.LastUpdatedAt = DateTime.UtcNow;
+
+            accountToDelete.Balance = 0;
+            accountToDelete.IncludeInTotalBalance = false;
+
             await _context.SaveChangesAsync();
 
-            return Ok(new
-            {
-                Message = "Đã xóa"
-            });
+            return Ok(new { Message = "Đã xóa tài khoản thành công" });
         }
-        /*TODO
-         * Các lựa chọn khi xóa tài khoản:
-         * 1. Xóa các giao dịch liên quan đã phát sinh
-         * 2. Xóa tài khoản nhưng giữ giao dịch
-         *      a. Chuyển tài khoản cần xóa sang một tài khoản khác
-         *      b. Xóa mềm, vẫn hiển thị giao dịch dùng tài khoản đã xóa
-         */
     }
 }
