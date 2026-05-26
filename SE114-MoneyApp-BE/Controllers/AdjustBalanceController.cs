@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using SE114_MoneyApp_BE.Controllers.Base;
 using SE114_MoneyApp_BE.Data;
 using SE114_MoneyApp_BE.DTOs.AdjustBalance;
 using SE114_MoneyApp_BE.Models;
@@ -8,35 +9,34 @@ using SE114_MoneyApp_BE.Models;
 namespace SE114_MoneyApp_BE.Controllers
 {
     [Route("api/[controller]")]
-    [ApiController]
-    public class AdjustBalanceController : ControllerBase
+    public class AdjustBalanceController : AuthorizeControllerBase
     {
-        private readonly AppDbContext _context;
-        public AdjustBalanceController(AppDbContext context)
-        {
-            _context = context;
-        }
+        public AdjustBalanceController(AppDbContext context) : base(context) { }
 
-        // GET: api/AdjustBalance/{userId}?accountId={accountId}&startDate={startDate}&endDate={endDate}
+
         /// <summary>
         /// Danh sách các điều chỉnh số dư của một người dùng, có thể lọc theo tài khoản và khoảng thời gian
         /// </summary>
-        /// <param name="userId"></param>
-        /// <param name="accountId"></param>
         /// <param name="startDate"></param>
         /// <param name="endDate"></param>
+        /// <param name="accountId"></param>
         /// <returns></returns>
-        [HttpGet("{userId}")]
+        [HttpGet]
         public async Task<ActionResult<List<AdjustBalanceResponse>>> GetAdjustBalances(
-            [FromRoute] int userId,
             [FromQuery] DateTime? startDate,
             [FromQuery] DateTime? endDate,
             [FromQuery] Guid? accountId)
         {
+            var (userId, success, message) = GetCurrentUserId();
+            if (!success)
+            {
+                return Unauthorized(new { Message = message });
+            }
+
             var query = _context.AdjustBalances
-                                .Include(ab => ab.Account)
-                                .Where(ab => ab.Account!.UserId == userId)
-                                .AsQueryable();
+                .Include(ab => ab.Account)
+                .Where(ab => ab.Account!.UserId == userId)
+                .AsQueryable();
 
             if (accountId.HasValue)
             {
@@ -77,12 +77,21 @@ namespace SE114_MoneyApp_BE.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateAdjustBalance([FromBody] AdjustBalanceRequest request)
         {
-            var account = await _context.Accounts.FindAsync(request.AccountId);
-            if (account == null || !account.IsActive)
+            var (userId, success, message) = GetCurrentUserId();
+            if (!success)
+            {
+                return Unauthorized(new { Message = message });
+            }
+
+            var account = await _context.Accounts
+                .Where(a => a.Id == request.AccountId && a.UserId == userId && a.IsActive)
+                .FirstOrDefaultAsync();
+
+            if (account == null)
             {
                 return NotFound(new
                 {
-                    Message = "Không tìm thấy tài khoản hoặc tài khoản đã bị vô hiệu hóa."
+                    Message = "Không tìm thấy tài khoản."
                 });
             }
 

@@ -1,6 +1,7 @@
 ﻿ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using SE114_MoneyApp_BE.Controllers.Base;
 using SE114_MoneyApp_BE.Data;
 using SE114_MoneyApp_BE.DTOs.Account;
 using SE114_MoneyApp_BE.Models;
@@ -10,21 +11,9 @@ using System.Security.Claims;
 namespace SE114_MoneyApp_BE.Controllers
 {
     [Route("api/[controller]")]
-    [ApiController]
-    [Authorize]
-    public class AccountController : ControllerBase
+    public class AccountController : AuthorizeControllerBase
     {
-        private readonly AppDbContext _context;
-        public AccountController(AppDbContext context)
-        {
-            _context = context;
-        }
-
-        private int GetCurrentUserId()
-        {
-            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            return string.IsNullOrEmpty(userIdClaim) ? 0 : int.Parse(userIdClaim);
-        }
+        public AccountController(AppDbContext context) : base(context) { }
 
         private static Expression<Func<Account, AccountResponse>> MapToAccountResponse = account => new AccountResponse
         {
@@ -37,6 +26,7 @@ namespace SE114_MoneyApp_BE.Controllers
             IncludeInTotalBalance = account.IncludeInTotalBalance   
         };
 
+
         // GET: api/account/5
         /// <summary>
         /// Lấy tất cả tài khoản người dùng
@@ -45,7 +35,11 @@ namespace SE114_MoneyApp_BE.Controllers
         [HttpGet]
         public async Task<ActionResult<List<AccountResponse>>> GetAccounts()
         {
-            int userId = GetCurrentUserId();
+            var (userId, success, message) = GetCurrentUserId();
+            if (!success)
+            {
+                return Unauthorized(new { Message = message });
+            }
 
             var accounts = await _context.Accounts
                 .Where(a => a.UserId == userId && a.IsActive == true)
@@ -57,8 +51,7 @@ namespace SE114_MoneyApp_BE.Controllers
 
         // GET: api/account/....
         /// <summary>
-        /// 
-        /// Lấy chi tiết 1 tài khoản
+        /// (*) Lấy chi tiết 1 tài khoản
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
@@ -83,12 +76,15 @@ namespace SE114_MoneyApp_BE.Controllers
         /// <summary>
         /// Tổng số dư của các tài khoản của người dùng
         /// </summary>
-        /// <param name="userId"></param>
         /// <returns></returns>
         [HttpGet("total-balance")]
         public async Task<ActionResult<decimal>> GetTotalBalanceByUserId()
         {
-            int userId = GetCurrentUserId();
+            var (userId, success, message) = GetCurrentUserId();
+            if (!success)
+            {
+                return Unauthorized(new { Message = message });
+            }
 
             var totalBalance = await _context.Accounts
                 .Where(a => a.UserId == userId && a.IsActive == true && a.IncludeInTotalBalance == true)
@@ -105,7 +101,11 @@ namespace SE114_MoneyApp_BE.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateAccount([FromBody] AccountRequest request)
         {
-            int userId = GetCurrentUserId();
+            var (userId, success, message) = GetCurrentUserId();
+            if (!success)
+            {
+                return Unauthorized(new { Message = message });
+            }
 
             var newAccount = new Account
             {
@@ -115,10 +115,7 @@ namespace SE114_MoneyApp_BE.Controllers
                 IconId = request.IconId,
                 Balance = request.Balance,
                 Description = request.Description,
-                IncludeInTotalBalance = request.IncludeInTotalBalance,
-                CreatedAt = DateTime.UtcNow,
-                LastUpdatedAt = DateTime.UtcNow,
-                IsActive = true
+                IncludeInTotalBalance = request.IncludeInTotalBalance
             };
 
             _context.Accounts.Add(newAccount);
@@ -137,10 +134,16 @@ namespace SE114_MoneyApp_BE.Controllers
         [HttpPut("{id:guid}")]
         public async Task<IActionResult> UpdateAccount(Guid id, [FromBody] AccountRequest request)
         {
-            int userId = GetCurrentUserId();
+            var (userId, success, message) = GetCurrentUserId();
+            if (!success)
+            {
+                return Unauthorized(new { Message = message });
+            }
 
             var account = await _context.Accounts
-                .FirstOrDefaultAsync(a => a.Id == id && a.UserId == userId && a.IsActive);
+                .FirstOrDefaultAsync(a => a.Id == id 
+                    && a.UserId == userId 
+                    && a.IsActive);
 
             if (account == null)
             {
@@ -185,7 +188,11 @@ namespace SE114_MoneyApp_BE.Controllers
         [HttpDelete("{id:guid}")]
         public async Task<IActionResult> SoftDeleteAccount(Guid id)
         {
-            int userId = GetCurrentUserId();
+            var (userId, success, message) = GetCurrentUserId();
+            if (!success)
+            {
+                return Unauthorized(new { Message = message });
+            }
 
             var account = await _context.Accounts
                 .FirstOrDefaultAsync(a => a.Id == id && a.UserId == userId && a.IsActive);

@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using SE114_MoneyApp_BE.Controllers.Base;
 using SE114_MoneyApp_BE.Data;
 using SE114_MoneyApp_BE.DTOs.Category;
 using SE114_MoneyApp_BE.Models;
@@ -10,14 +11,9 @@ using System.Security.Claims;
 namespace SE114_MoneyApp_BE.Controllers
 {
     [Route("api/[controller]")]
-    [ApiController]
-    public class CategoryController : ControllerBase
+    public class CategoryController : AuthorizeControllerBase
     {
-        private AppDbContext _context;
-        public CategoryController(AppDbContext context)
-        {
-            _context = context;
-        }
+        public CategoryController(AppDbContext context) : base(context) { }
 
         private static Expression<Func<Category, CategoryResponse>> MapToCategoryResponse = c => new CategoryResponse
         {
@@ -33,8 +29,15 @@ namespace SE114_MoneyApp_BE.Controllers
             LastUpdatedAt = c.LastUpdatedAt
         };
 
-        private async Task<ActionResult<List<CategoryResponse>>> GetCategories(int userId, int type)
+        #region GET
+        private async Task<ActionResult<List<CategoryResponse>>> GetCategories(int type)
         {
+            var (userId, success, message) = GetCurrentUserId();
+            if (!success)
+            {
+                return Unauthorized(new { Message = message });
+            }
+
             var categories = await _context.Categories
                 .Where(c => c.Type == type && c.UserId == userId && c.IsActive)
                 .OrderByDescending(c => c.SortingOrder)
@@ -48,12 +51,11 @@ namespace SE114_MoneyApp_BE.Controllers
         /// <summary>
         /// Danh sách hạng mục chi tiêu
         /// </summary>
-        /// <param name="userId"></param>
         /// <returns></returns>
-        [HttpGet("expense/{userId}")]
-        public async Task<ActionResult<List<CategoryResponse>>> GetExpenseCategories(int userId)
+        [HttpGet("expense")]
+        public async Task<ActionResult<List<CategoryResponse>>> GetExpenseCategories()
         {
-            var expenseCategories = await GetCategories(userId, 0);
+            var expenseCategories = await GetCategories(0);
 
             return Ok(expenseCategories);
         }
@@ -62,19 +64,18 @@ namespace SE114_MoneyApp_BE.Controllers
         /// <summary>
         /// Danh sách hạng mục thu nhập
         /// </summary>
-        /// <param name="userId"></param>
         /// <returns></returns>
-        [HttpGet("income/{userId}")]
-        public async Task<ActionResult<List<CategoryResponse>>> GetIncomeCategories(int userId)
+        [HttpGet("income")]
+        public async Task<ActionResult<List<CategoryResponse>>> GetIncomeCategories()
         {
-            var expenseCategories = await GetCategories(userId, 1);
+            var expenseCategories = await GetCategories(1);
 
             return Ok(expenseCategories);
         }
 
         // GET: api/Category/...
         /// <summary>
-        /// Chi tiết một hạng mục theo Id
+        /// (*) Chi tiết một hạng mục theo Id
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
@@ -95,17 +96,16 @@ namespace SE114_MoneyApp_BE.Controllers
             }
             return Ok(category);
         }
+        #endregion
 
-
-
+        #region POST
         private async Task<IActionResult> CreateCategory(CategoryRequest request, int type, string successMessage)
         {
-            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userIdClaim))
+            var (userId, success, message) = GetCurrentUserId();
+            if (!success)
             {
-                return Unauthorized(new { Message = "Phiên đăng nhập không hợp lệ." });
+                return Unauthorized(new { Message = message });
             }
-            int userId = int.Parse(userIdClaim);
 
             var maxSortingOrder = await _context.Categories
                 .Where(c => c.UserId == userId && c.Type == type && c.IsActive)
@@ -159,12 +159,16 @@ namespace SE114_MoneyApp_BE.Controllers
         {
             return await CreateCategory(request, 1, "Tạo hạng mục thu nhập thành công");
         }
+        #endregion
 
+        #region PUT
         private async Task<IActionResult> UpdateCategoryInternal(Guid id, CategoryRequest request, int type)
         {
-            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userIdClaim)) return Unauthorized(new { Message = "Phiên đăng nhập không hợp lệ." });
-            int userId = int.Parse(userIdClaim);
+            var (userId, success, message) = GetCurrentUserId();
+            if (!success)
+            {
+                return Unauthorized(new { Message = message });
+            }
 
             var category = await _context.Categories
                 .FirstOrDefaultAsync(c => c.Id == id && c.UserId == userId && c.Type == type && c.IsActive);
@@ -220,9 +224,11 @@ namespace SE114_MoneyApp_BE.Controllers
 
         private async Task<IActionResult> ReorderCategoryInternal(Guid id, ReorderCategoryRequest request, int type)
         {
-            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userIdClaim)) return Unauthorized(new { Message = "Phiên đăng nhập không hợp lệ." });
-            int userId = int.Parse(userIdClaim);
+            var (userId, success, message) = GetCurrentUserId();
+            if (!success)
+            {
+                return Unauthorized(new { Message = message });
+            }
 
             var categoryToMove = await _context.Categories
                 .FirstOrDefaultAsync(c => c.Id == id && c.UserId == userId && c.Type == type && c.IsActive);
@@ -294,7 +300,11 @@ namespace SE114_MoneyApp_BE.Controllers
         {
             return await ReorderCategoryInternal(id, request, 1); // 1 = Income
         }
+        #endregion
 
+        #region DELETE
+        //TODO: Xử lý xóa sau ki có giao dịch
+        #endregion
 
     }
 }

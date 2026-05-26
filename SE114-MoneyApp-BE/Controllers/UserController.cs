@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using SE114_MoneyApp_BE.Controllers.Base;
 using SE114_MoneyApp_BE.Data;
 using SE114_MoneyApp_BE.DTOs.User;
 using SE114_MoneyApp_BE.Models;
@@ -8,15 +9,9 @@ using System.Linq.Expressions;
 namespace SE114_MoneyApp_BE.Controllers
 {
     [Route("api/[controller]")]
-    [ApiController]
-    public class UserController : ControllerBase
-    {
-        private readonly AppDbContext _context;
-        
-        public UserController(AppDbContext context)
-        {
-            _context = context;
-        }
+    public class UserController : AuthorizeControllerBase
+    {      
+        public UserController(AppDbContext context) : base(context) { }
 
         private static Expression<Func<User, UserProfileResponse>> MapToUserProfileResponse = user => new UserProfileResponse
         {
@@ -29,17 +24,23 @@ namespace SE114_MoneyApp_BE.Controllers
             LastUpdatedAt = user.LastUpdatedAt
         };
 
-        // GET: api/User/5
+        // GET: api/User
         /// <summary>
-        /// Lấy thông tin người dùng
+        /// Lấy thông tin người dùng hiện tại
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
-        [HttpGet("{id}")]
-        public async Task<ActionResult<UserProfileResponse>> GetUserById([FromRoute] int id)
+        [HttpGet]
+        public async Task<ActionResult<UserProfileResponse>> GetUser()
         {
+            var (userId, sucess, message) = GetCurrentUserId();
+            if (!sucess)
+            {
+                return Unauthorized(new { Message = message });
+            }
+
             var userProfile = await _context.Users
-                .Where(u => u.Id == id && u.IsActive == true)
+                .Where(u => u.Id == userId && u.IsActive == true)
                 .Select(MapToUserProfileResponse)
                 .FirstOrDefaultAsync();
             
@@ -58,13 +59,15 @@ namespace SE114_MoneyApp_BE.Controllers
 
         // GET: api/User/search?email=... hoặc api/user/search?phone=...
         /// <summary>
-        /// Tìm thông tin người dùng theo email hoặc số điện thoại
+        /// (*) Tìm thông tin người dùng theo id, email hoặc số điện thoại
         /// </summary>
+        /// <param name="id"></param>
         /// <param name="email"></param>
         /// <param name="phone"></param>
         /// <returns></returns>
         [HttpGet("search")]
         public async Task<ActionResult<UserProfileResponse>> SearchUser(
+            [FromQuery] int? id,
             [FromQuery] string? email,
             [FromQuery] string? phone)
         {
@@ -74,7 +77,10 @@ namespace SE114_MoneyApp_BE.Controllers
             }
 
             var query = _context.Users.Where(u => u.IsActive);
-
+            if (id.HasValue)
+            {
+                query = query.Where(u => u.Id == id.Value);
+            }
             if (!string.IsNullOrEmpty(email))
             {
                 query = query.Where(u => u.Email == email);
@@ -97,12 +103,12 @@ namespace SE114_MoneyApp_BE.Controllers
             return Ok(userProfile);
         }
 
-        //GET: api/User
+        //GET: api/User/all
         /// <summary>
-        /// Lấy mã và email tất cả người dùng hiện tại
+        /// (*) Lấy mã và email tất cả người dùng hiện tại
         /// </summary>
         /// <returns></returns>
-        [HttpGet]
+        [HttpGet("all")]
         public async Task<IActionResult> GetAllUsers()
         {
             var totalActive = await _context.Users.CountAsync(u => u.IsActive);
@@ -128,17 +134,22 @@ namespace SE114_MoneyApp_BE.Controllers
             return Ok(result);
         }
 
-        // PUT: api/user/{id}
+        // PUT: api/user
         /// <summary>
-        /// Sửa đổi thông tin người dùng
+        /// Sửa đổi thông tin người dùng hiện tại
         /// </summary>
-        /// <param name="id"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateUser(int id, [FromBody] UserProfileRequest request)
+        [HttpPut]
+        public async Task<IActionResult> UpdateUser([FromBody] UserProfileRequest request)
         {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == id && u.IsActive);
+            var (userId, success, message) = GetCurrentUserId();
+            if (!success)
+            {
+                return Unauthorized(new { Message = message });
+            }
+
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId && u.IsActive);
 
             if (user == null)
             {
@@ -146,7 +157,7 @@ namespace SE114_MoneyApp_BE.Controllers
             }
 
             var emailExists = await _context.Users
-                .AnyAsync(u => u.Email == request.Email && u.Id != id);
+                .AnyAsync(u => u.Email == request.Email && u.Id != userId);
             if (emailExists)
             {
                 return BadRequest(new { Message = "Email này đã được sử dụng bởi một tài khoản khác!" });
@@ -155,7 +166,7 @@ namespace SE114_MoneyApp_BE.Controllers
             if (!string.IsNullOrEmpty(request.PhoneNumber))
             {
                 var phoneExists = await _context.Users
-                    .AnyAsync(u => u.PhoneNumber == request.PhoneNumber && u.Id != id);
+                    .AnyAsync(u => u.PhoneNumber == request.PhoneNumber && u.Id != userId);
                 if (phoneExists)
                 {
                     return BadRequest(new { Message = "Số điện thoại này đã được sử dụng bởi một tài khoản khác!" });
@@ -175,14 +186,19 @@ namespace SE114_MoneyApp_BE.Controllers
 
         // DELETE: api/user/{id}
         /// <summary>
-        /// Hủy kích hoạt (xóa mềm) người dùng
+        /// Hủy kích hoạt (xóa mềm) người dùng hiện tại
         /// </summary>
-        /// <param name="id"></param>
         /// <returns></returns>
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeactiveUser(int id)
+        [HttpDelete]
+        public async Task<IActionResult> DeactiveUser()
         {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == id && u.IsActive);
+            var (userId, success, message) = GetCurrentUserId();
+            if (!success)
+            {
+                return Unauthorized(new { Message = message });
+            }
+
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId && u.IsActive);
 
             if (user == null)
             {

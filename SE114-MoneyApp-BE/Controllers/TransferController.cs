@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using SE114_MoneyApp_BE.Controllers.Base;
 using SE114_MoneyApp_BE.Data;
 using SE114_MoneyApp_BE.DTOs.Transfer;
 using SE114_MoneyApp_BE.Models;
@@ -7,15 +8,10 @@ using System.Linq.Expressions;
 
 namespace SE114_MoneyApp_BE.Controllers
 {
-    [ApiController]
     [Route("api/[controller]")]
-    public class TransferController : ControllerBase
+    public class TransferController : AuthorizeControllerBase
     {
-        private readonly AppDbContext _context;
-        public TransferController(AppDbContext context)
-        {
-            _context = context;
-        }
+        public TransferController(AppDbContext context) : base(context) { }
 
         private static Expression<Func<Transfer, TransferResponse>> MapToTransferResponse = t => new TransferResponse
         {
@@ -35,19 +31,27 @@ namespace SE114_MoneyApp_BE.Controllers
         /// <summary>
         /// Danh sách các chuyển khoản của người dùng, có thể lọc theo ngày tháng, tài khoản nguồn và tài khoản đích
         /// </summary>
-        /// <param name="userId"></param>
         /// <param name="startDate"></param>
         /// <param name="endDate"></param>
         /// <param name="source"></param>
         /// <param name="destination"></param>
         /// <returns></returns>
-        [HttpGet("{userId}")]
-        public async Task<ActionResult<List<TransferResponse>>> GetTransfers(int userId,
+        [HttpGet]
+        public async Task<ActionResult<List<TransferResponse>>> GetTransfers(
             [FromQuery] DateTime? startDate = null,
             [FromQuery] DateTime? endDate = null,
             [FromQuery] Guid? source = null,
             [FromQuery] Guid? destination = null)
         {
+            var (userId, success, message) = GetCurrentUserId();
+            if (!success)
+            {
+                return Unauthorized(new
+                {
+                    Message = message
+                });
+            }
+
             var query = _context.Transfers
                 .Where(t => t.Source!.UserId == userId)
                 .AsQueryable();
@@ -82,7 +86,7 @@ namespace SE114_MoneyApp_BE.Controllers
 
         // GET: api/Transfer/{id}
         /// <summary>
-        /// Chi tiết chuyển khoản theo Id
+        /// (*) Chi tiết chuyển khoản theo Id
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
@@ -112,6 +116,15 @@ namespace SE114_MoneyApp_BE.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateTransfer([FromBody] TransferRequest request)
         {
+            var (userId, success, message) = GetCurrentUserId();
+            if (!success)
+            {
+                return Unauthorized(new
+                {
+                    Message = message
+                });
+            }
+            
             // Kiểm tra tài khoản nguồn và đích
             if (request.SourceAccountId == request.DestinationAccountId)
             {
@@ -134,6 +147,13 @@ namespace SE114_MoneyApp_BE.Controllers
                 return BadRequest(new
                 {
                     Message = "Tài khoản nguồn và tài khoản đích phải thuộc cùng một người dùng"
+                });
+            }
+            if (sourceAccount.UserId != userId)
+            {
+                return BadRequest(new
+                {
+                    Message = "Bạn không có quyền sử dụng tài khoản nguồn hoặc tài khoản đích"
                 });
             }
 
@@ -169,10 +189,21 @@ namespace SE114_MoneyApp_BE.Controllers
         [HttpPut("{id:guid}")]
         public async Task<IActionResult> UpdateTransfer(Guid id, [FromBody] TransferRequest request)
         {
+            var (userId, success, message) = GetCurrentUserId();
+            if (!success)
+            {
+                return Unauthorized(new { Message = message });
+            }
+
             var transfer = await _context.Transfers.FindAsync(id);
             if (transfer == null)
             {
                 return NotFound(new { Message = "Không tìm thấy chuyển khoản" });
+            }
+
+            if (transfer.Source!.UserId != userId)
+            {
+                return BadRequest(new { Message = "Bạn không có quyền chỉnh sửa chuyển khoản này" });
             }
 
             // TÌM LẠI CÁC VÍ CŨ ĐỂ HOÀN TIỀN
@@ -200,6 +231,10 @@ namespace SE114_MoneyApp_BE.Controllers
             if (newSourceAccount.Id == newDestinationAccount.Id)
             {
                 return BadRequest(new { Message = "Tài khoản nguồn và đích không được trùng nhau" });
+            }
+            if (newSourceAccount.UserId != userId)
+            {
+                return BadRequest(new { Message = "Bạn không có quyền sử dụng tài khoản nguồn hoặc tài khoản đích mới" });
             }
 
             // ÁP DỤNG GIAO DỊCH MỚI LÊN VÍ MỚI
@@ -229,6 +264,15 @@ namespace SE114_MoneyApp_BE.Controllers
         [HttpDelete("{id:guid}")]
         public async Task<IActionResult> DeleteTransfer(Guid id)
         {
+            var (userId, success, message) = GetCurrentUserId();
+            if (!success)
+            {
+                return Unauthorized(new
+                {
+                    Message = message
+                });
+            }
+
             var transfer = await _context.Transfers.FindAsync(id);
             if (transfer == null)
             {
@@ -245,6 +289,13 @@ namespace SE114_MoneyApp_BE.Controllers
                 return BadRequest(new
                 {
                     Message = "Tài khoản nguồn hoặc tài khoản đích không tồn tại"
+                });
+            }
+            if (sourceAccount.UserId != userId)
+            {
+                return BadRequest(new
+                {
+                    Message = "Không có quyền xóa tài khoản."
                 });
             }
 
