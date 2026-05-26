@@ -306,7 +306,93 @@ namespace SE114_MoneyApp_BE.Controllers
         #endregion
 
         #region DELETE
-        //TODO: Xử lý xóa sau ki có giao dịch
+        // DELETE: api/Category/{id}
+        /// <summary>
+        /// Xóa danh mục với 3 tùy chọn xử lý giao dịch cũ
+        /// </summary>
+        /// <param name="id">Id của danh mục cần xóa</param>
+        /// <param name="mode">"soft_delete" (mặc định), "delete_all", hoặc "move"</param>
+        /// <param name="fallbackCategoryId">Id của danh mục dự phòng (bắt buộc nếu mode="move")</param>
+        /// <returns></returns>
+        [HttpDelete("{id:guid}")]
+        public async Task<IActionResult> DeleteCategory(
+            Guid id,
+            [FromQuery] string mode = "soft_delete",
+            [FromQuery] Guid? fallbackCategoryId = null)
+        {
+            var (userId, success, message) = GetCurrentUserId();
+            if (!success) return Unauthorized(new { Message = message });
+
+            // 1. TÌM DANH MỤC CẦN XÓA
+            var categoryToDelete = await _context.Categories
+                .FirstOrDefaultAsync(c => c.Id == id && c.UserId == userId && c.IsActive);
+
+            if (categoryToDelete == null)
+            {
+                return NotFound(new { Message = "Không tìm thấy danh mục hoặc bạn không có quyền xóa." });
+            }
+
+            if (categoryToDelete.IsDefault)
+            {
+                return BadRequest(new { Message = "Không được phép xóa danh mục mặc định của hệ thống." });
+            }
+
+            // 2. XỬ LÝ CÁC GIAO DỊCH LIÊN QUAN THEO TỪNG CHẾ ĐỘ
+            var relatedTransactions = await _context.Transactions
+                .Include(t => t.Account)
+                .Where(t => t.CategoryId == id)
+                .ToListAsync();
+
+            switch (mode.ToLower())
+            {
+                case "move":
+                    if (!fallbackCategoryId.HasValue)
+                    {
+                        return BadRequest(new { Message = "Vui lòng cung cấp ID danh mục dự phòng để chuyển giao dịch." });
+                    }
+
+                    var fallbackCategory = await _context.Categories
+                        .FirstOrDefaultAsync(c => c.Id == fallbackCategoryId.Value && c.UserId == userId && c.IsActive);
+
+                    if (fallbackCategory == null || fallbackCategory.Type != categoryToDelete.Type)
+                    {
+                        return BadRequest(new { Message = "Danh mục dự phòng không hợp lệ hoặc không cùng loại (Thu/Chi)." });
+                    }
+
+                    // Đổi CategoryId của tất cả giao dịch cũ sang cái mới
+                    foreach (var t in relatedTransactions)
+                    {
+                        t.CategoryId = fallbackCategory.Id;
+                        t.LastUpdatedAt = DateTime.UtcNow;
+                    }
+                    break;
+
+                case "delete_all":
+                    foreach (var t in relatedTransactions)
+                    {
+                        if (categoryToDelete.Type == Category.CategoryType.Expense)
+                            t.Account!.Balance += t.Amount; 
+                        else if (categoryToDelete.Type == Category.CategoryType.Income)
+                            t.Account!.Balance -= t.Amount;
+                    }
+                    _context.Transactions.RemoveRange(relatedTransactions);
+                    break;
+
+                case "soft_delete":
+                default:
+                    // Kịch bản C: Chỉ xóa mềm danh mục (Ẩn đi, giao dịch cũ giữ nguyên)
+                    // Không cần làm gì với mảng relatedTransactions cả
+                    break;
+            }
+            
+            // Luôn xóa mềm
+            categoryToDelete.IsActive = false;
+            categoryToDelete.LastUpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new { Message = "Xóa danh mục thành công" });
+        }
         #endregion
 
     }

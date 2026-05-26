@@ -190,30 +190,89 @@ namespace SE114_MoneyApp_BE.Controllers
 
         // DELETE: api/user
         /// <summary>
-        /// Hủy kích hoạt (xóa mềm) người dùng hiện tại
+        /// Xóa người dùng (Tùy chọn: soft_delete để khóa tài khoản, hoặc wipe_data để xóa vĩnh viễn toàn bộ dữ liệu)
         /// </summary>
+        /// <param name="mode">"soft_delete" (mặc định) hoặc "wipe_data"</param>
         /// <returns></returns>
         [HttpDelete]
-        public async Task<IActionResult> DeactiveUser()
+        public async Task<IActionResult> DeleteUser([FromQuery] string mode = "soft_delete")
         {
             var (userId, success, message) = GetCurrentUserId();
-            if (!success)
-            {
-                return Unauthorized(new { Message = message });
-            }
+            if (!success) return Unauthorized(new { Message = message });
 
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId && u.IsActive);
 
             if (user == null)
             {
-                return NotFound(new { Message = "Không tìm thấy người dùng hoặc tài khoản đã bị xóa trước đó." });
+                return NotFound(new { Message = "Không tìm thấy người dùng hoặc tài khoản đã bị khóa trước đó." });
             }
 
-            user.IsActive = false;
-            user.LastUpdatedAt = DateTime.UtcNow;
+            if (mode.ToLower() == "wipe_data")
+            {
+                // KỊCH BẢN 1: XÓA VĨNH VIỄN (RIGHT TO BE FORGOTTEN)
+                // Phải xóa theo thứ tự TỪ CON ĐẾN CHA để không bị lỗi Khóa ngoại (Foreign Key)
+
+                // 1. Lấy danh sách ID các ví của User này
+                var accountIds = await _context.Accounts
+                    .Where(a => a.UserId == userId)
+                    .Select(a => a.Id)
+                    .ToListAsync();
+
+                // 2. Xóa toàn bộ Transfers liên quan đến các ví này
+                var transfers = await _context.Transfers
+                    .Where(t => accountIds.Contains(t.SourceAccountId) || accountIds.Contains(t.DestinationAccountId))
+                    .ToListAsync();
+                _context.Transfers.RemoveRange(transfers);
+
+                // 3. Xóa toàn bộ AdjustBalances
+                var adjustBalances = await _context.AdjustBalances
+                    .Where(ab => accountIds.Contains(ab.AccountId))
+                    .ToListAsync();
+                _context.AdjustBalances.RemoveRange(adjustBalances);
+
+                // 4. Xóa toàn bộ Transactions
+                var transactions = await _context.Transactions
+                    .Where(t => accountIds.Contains(t.AccountId))
+                    .ToListAsync();
+                _context.Transactions.RemoveRange(transactions);
+
+                // 5. Xóa toàn bộ Accounts
+                var accounts = await _context.Accounts.Where(a => a.UserId == userId).ToListAsync();
+                _context.Accounts.RemoveRange(accounts);
+
+                // 6. Xóa toàn bộ Categories
+                var categories = await _context.Categories.Where(c => c.UserId == userId).ToListAsync();
+                _context.Categories.RemoveRange(categories);
+
+                // 7. Cuối cùng, búng tay bay màu User
+                _context.Users.Remove(user);
+            }
+            else
+            {
+                // KỊCH BẢN 2: SOFT DELETE (CHỈ KHÓA TÀI KHOẢN)
+                user.IsActive = false;
+                user.LastUpdatedAt = DateTime.UtcNow;
+
+                // THỦ THUẬT AN TOÀN: Ẩn luôn toàn bộ Ví và Danh mục để vô hiệu hóa hoàn toàn dữ liệu
+                var accounts = await _context.Accounts.Where(a => a.UserId == userId && a.IsActive).ToListAsync();
+                foreach (var acc in accounts)
+                {
+                    acc.IsActive = false;
+                    acc.IncludeInTotalBalance = false; // Ngắt khỏi thống kê
+                    acc.LastUpdatedAt = DateTime.UtcNow;
+                }
+
+                var categories = await _context.Categories.Where(c => c.UserId == userId && c.IsActive).ToListAsync();
+                foreach (var cat in categories)
+                {
+                    cat.IsActive = false;
+                    cat.LastUpdatedAt = DateTime.UtcNow;
+                }
+            }
+
             await _context.SaveChangesAsync();
 
-            return Ok(new { Message = "Đã xóa người dùng thành công!" });
+            return Ok(new { Message = "Đã xử lý xóa tài khoản thành công!" });
         }
     }
 }
