@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
+﻿using SE114_MoneyApp_BE.Models;
 
 namespace SE114_MoneyApp_BE.DTOs.Category
 {
@@ -6,7 +6,7 @@ namespace SE114_MoneyApp_BE.DTOs.Category
     {
         public Guid Id { get; set; }
         public string CategoryName { get; set; } = string.Empty;
-        public int Type { get; set; } // 0: Expense 1: Income
+        public Models.Category.CategoryType Type { get; set; }
         public decimal MonthlyTarget { get; set; }
         public int ColorId { get; set; }
         public int IconId { get; set; }

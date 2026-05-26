@@ -1,0 +1,277 @@
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using SE114_MoneyApp_BE.Controllers.Base;
+using SE114_MoneyApp_BE.Data;
+using SE114_MoneyApp_BE.DTOs.Transaction;
+using SE114_MoneyApp_BE.Models;
+using System.Diagnostics;
+using System.Linq.Expressions;
+
+namespace SE114_MoneyApp_BE.Controllers
+{
+    [Route("api/[controller]")]
+    public class TransactionController : AuthorizeControllerBase
+    {
+        public TransactionController(AppDbContext context) : base(context) { }
+
+        private Expression<Func<Transaction, TransactionResponse>> MapToTransactionResponse = t => new TransactionResponse
+        {
+            Id = t.Id,
+            AccountId = t.AccountId,
+            AccountName = t.Account != null ? t.Account.AccountName : string.Empty,
+            CategoryId = t.CategoryId,
+            CategoryName = t.Category != null ? t.Category.CategoryName : string.Empty,
+            Amount = t.Amount,
+            Date = t.Date,
+            Note = t.Note,
+            ImageUrls = t.ImageUrls,
+            CreatedAt = t.CreatedAt,
+            LastUpdatedAt = t.LastUpdatedAt
+        };
+
+        /// <summary>
+        /// Lấy danh sách giao dịch của người dùng hiện tại, có thể lọc theo ngày tháng, tài khoản và danh mục
+        /// </summary>
+        /// <param name="startDate"></param>
+        /// <param name="endDate"></param>
+        /// <param name="categoryType"></param>
+        /// <param name="accountId"></param>
+        /// <param name="categoryId"></param>
+        /// <returns></returns>
+        [HttpGet]
+        public async Task<ActionResult<List<TransactionResponse>>> GetTransactions( [FromQuery] DateTime? startDate,
+            [FromQuery] DateTime? endDate,
+            [FromQuery] Category.CategoryType? categoryType,
+            [FromQuery] Guid? accountId,
+            [FromQuery] Guid? categoryId)
+        {
+            var (userId, success, message) = GetCurrentUserId();
+            if (!success)
+            {
+                return Unauthorized(message);
+            }
+
+            var query = _context.Transactions
+                .Where(t => t.Account!.UserId == userId)
+                .AsQueryable();
+
+            if (startDate.HasValue)
+            {
+                query = query.Where(t => t.Date >= startDate.Value);
+            }
+            if (endDate.HasValue)
+            {
+                query = query.Where(t => t.Date <= endDate.Value);
+            }
+            if (categoryType.HasValue && categoryType.Value != Category.CategoryType.All)
+            {
+                query = query.Where(t => t.Category!.Type == categoryType.Value);
+            }
+            if (accountId.HasValue)
+            {
+                query = query.Where(t => t.AccountId == accountId.Value);
+            }
+            if (categoryId.HasValue)
+            {
+                query = query.Where(t => t.CategoryId == categoryId.Value);
+            }
+
+            var transactions = await query
+                .OrderByDescending(t => t.Date)
+                .Select(MapToTransactionResponse)
+                .ToListAsync();
+
+            return Ok(transactions);
+        }
+
+        /// <summary>
+        /// (*) Lấy chi tiết 1 giao dịch
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        [HttpGet("{id}")]
+        public async Task<ActionResult<TransactionResponse>> GetTransactionById(Guid id)
+        {
+            var transaciton = await _context.Transactions
+                .Where(t => t.Id == id)
+                .Select(MapToTransactionResponse)
+                .FirstOrDefaultAsync();
+
+            if (transaciton == null)
+            {
+                return NotFound("Transaction not found");
+            }
+            return Ok(transaciton);
+        }
+
+        /// <summary>
+        /// Tạo giao dịch mới
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        [HttpPost]
+        public async Task<IActionResult> CreateTransaction([FromBody] TransactionRequest request)
+        {
+            var (userId, success, message) = GetCurrentUserId();
+            if (!success)
+            {
+                return Unauthorized(message);
+            }
+
+            // Validate account and category
+            var account = await _context.Accounts.FirstOrDefaultAsync(a => a.Id == request.AccountId && a.UserId == userId);
+            if (account == null)
+            {
+                return BadRequest("Invalid account");
+            }
+            var category = await _context.Categories.FirstOrDefaultAsync(c => c.Id == request.CategoryId && c.UserId == userId);
+            if (category == null)
+            {
+                return BadRequest("Invalid category");
+            }
+
+            var transaction = new Transaction
+            {
+                AccountId = request.AccountId,
+                CategoryId = request.CategoryId,
+                Amount = request.Amount,
+                Date = request.Date,
+                Note = request.Note,
+                ImageUrls = request.ImageUrls
+            };
+
+            switch (category.Type)
+            {
+                case Category.CategoryType.Expense:
+                    account.Balance -= request.Amount;
+                    break;
+                case Category.CategoryType.Income:
+                    account.Balance += request.Amount;
+                    break;
+                default:
+                    return BadRequest("Invalid category type");
+            }
+
+            _context.Transactions.Add(transaction);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { transaction.Id });
+        }
+
+        /// <summary>
+        /// Cập nhật giao dịch
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        [HttpPut("{id:guid}")]
+        public async Task<IActionResult> UpdateTransaction(Guid id, [FromBody] TransactionRequest request)
+        {
+            var (userId, success, message) = GetCurrentUserId();
+            if (!success)
+            {
+                return Unauthorized(message);
+            }
+
+            var transaction = await _context.Transactions
+                .Where(t => t.Id == id && t.Account!.UserId == userId)
+                .FirstOrDefaultAsync();
+            if (transaction == null)
+            {
+                return NotFound("Không tìm thấy giao dịch hoặc không có quyền truy cập");
+            }
+
+            // Hoàn tác giao dịch cũ
+            var oldAccount = await _context.Accounts.FindAsync(transaction.AccountId);
+            var oldCategory = await _context.Categories.FindAsync(transaction.CategoryId);
+
+            if (oldAccount != null && oldCategory != null)
+            {
+                switch (oldCategory.Type)
+                {
+                    case Category.CategoryType.Expense:
+                        oldAccount.Balance += transaction.Amount;
+                        break;
+                    case Category.CategoryType.Income:
+                        oldAccount.Balance -= transaction.Amount;
+                        break;
+                    default:
+                        return BadRequest("Invalid category type");
+                }
+            }
+
+            var newAccount = await _context.Accounts.FirstOrDefaultAsync(a => a.Id == request.AccountId && a.UserId == userId);
+            if (newAccount == null)
+            {
+                return BadRequest("Invalid account");
+            }
+            var newCategory = await _context.Categories.FirstOrDefaultAsync(c => c.Id == request.CategoryId && c.UserId == userId);
+            if (newCategory == null)
+            {
+                return BadRequest("Invalid category");
+            }
+
+            transaction.AccountId = request.AccountId;
+            transaction.CategoryId = request.CategoryId;
+            transaction.Date = request.Date;
+            transaction.Note = request.Note;
+            transaction.ImageUrls = request.ImageUrls;
+            transaction.LastUpdatedAt = DateTime.UtcNow;
+            switch (newCategory.Type)
+            {
+                case Category.CategoryType.Expense:
+                    newAccount.Balance -= request.Amount;
+                    break;
+                case Category.CategoryType.Income:
+                    newAccount.Balance += request.Amount;
+                    break;
+                default:
+                    return BadRequest("Invalid category type");
+            }
+
+            await _context.SaveChangesAsync();
+            return Ok(new { Message = "Cập nhật thành công" });
+        }
+
+        /// <summary>
+        /// Xóa giao dịch
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        [HttpDelete("{id:guid}")]
+        public async Task<IActionResult> DeleteTransaction(Guid id)
+        {
+            var (userId, success, message) = GetCurrentUserId();
+            if (!success)
+            {
+                return Unauthorized(message);
+            }
+            var transaction = await _context.Transactions
+                .Where(t => t.Id == id && t.Account!.UserId == userId)
+                .FirstOrDefaultAsync();
+            if (transaction == null)
+            {
+                return NotFound("Không tìm thấy giao dịch hoặc không có quyền truy cập");
+            }
+            var account = await _context.Accounts.FindAsync(transaction.AccountId);
+            var category = await _context.Categories.FindAsync(transaction.CategoryId);
+            if (account != null && category != null)
+            {
+                switch (category.Type)
+                {
+                    case Category.CategoryType.Expense:
+                        account.Balance += transaction.Amount;
+                        break;
+                    case Category.CategoryType.Income:
+                        account.Balance -= transaction.Amount;
+                        break;
+                    default:
+                        return BadRequest("Invalid category type");
+                }
+            }
+            _context.Transactions.Remove(transaction);
+            await _context.SaveChangesAsync();
+            return Ok(new { Message = "Xóa thành công" });
+        }
+    }
+}

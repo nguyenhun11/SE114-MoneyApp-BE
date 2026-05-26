@@ -30,7 +30,7 @@ namespace SE114_MoneyApp_BE.Controllers
         };
 
         #region GET
-        private async Task<ActionResult<List<CategoryResponse>>> GetCategories(int type)
+        private async Task<ActionResult<List<CategoryResponse>>> GetCategories(Category.CategoryType type)
         {
             var (userId, success, message) = GetCurrentUserId();
             if (!success)
@@ -55,7 +55,7 @@ namespace SE114_MoneyApp_BE.Controllers
         [HttpGet("expense")]
         public async Task<ActionResult<List<CategoryResponse>>> GetExpenseCategories()
         {
-            var expenseCategories = await GetCategories(0);
+            var expenseCategories = await GetCategories(Category.CategoryType.Expense);
 
             return Ok(expenseCategories);
         }
@@ -68,7 +68,7 @@ namespace SE114_MoneyApp_BE.Controllers
         [HttpGet("income")]
         public async Task<ActionResult<List<CategoryResponse>>> GetIncomeCategories()
         {
-            var expenseCategories = await GetCategories(1);
+            var expenseCategories = await GetCategories(Category.CategoryType.Income);
 
             return Ok(expenseCategories);
         }
@@ -99,7 +99,7 @@ namespace SE114_MoneyApp_BE.Controllers
         #endregion
 
         #region POST
-        private async Task<IActionResult> CreateCategory(CategoryRequest request, int type, string successMessage)
+        private async Task<IActionResult> CreateCategory(CategoryRequest request, Category.CategoryType type, string successMessage)
         {
             var (userId, success, message) = GetCurrentUserId();
             if (!success)
@@ -144,7 +144,7 @@ namespace SE114_MoneyApp_BE.Controllers
         [Authorize]
         public async Task<IActionResult> CreateExpenseCategory([FromBody] CategoryRequest request)
         {
-            return await CreateCategory(request, 0, "Tạo hạng mục chi tiêu thành công");
+            return await CreateCategory(request, Category.CategoryType.Expense, "Tạo hạng mục chi tiêu thành công");
         }
 
         // POST: api/Category/income
@@ -157,12 +157,12 @@ namespace SE114_MoneyApp_BE.Controllers
         [Authorize]
         public async Task<IActionResult> CreateIncomeCategory([FromBody] CategoryRequest request)
         {
-            return await CreateCategory(request, 1, "Tạo hạng mục thu nhập thành công");
+            return await CreateCategory(request, Category.CategoryType.Income, "Tạo hạng mục thu nhập thành công");
         }
         #endregion
 
         #region PUT
-        private async Task<IActionResult> UpdateCategoryInternal(Guid id, CategoryRequest request, int type)
+        private async Task<IActionResult> UpdateCategoryInternal(Guid id, CategoryRequest request, Category.CategoryType type)
         {
             var (userId, success, message) = GetCurrentUserId();
             if (!success)
@@ -206,7 +206,7 @@ namespace SE114_MoneyApp_BE.Controllers
         [Authorize]
         public async Task<IActionResult> UpdateExpenseCategory(Guid id, [FromBody] CategoryRequest request)
         {
-            return await UpdateCategoryInternal(id, request, 0); // 0 = Expense
+            return await UpdateCategoryInternal(id, request, Category.CategoryType.Expense);
         }
 
         /// <summary>
@@ -219,10 +219,10 @@ namespace SE114_MoneyApp_BE.Controllers
         [Authorize]
         public async Task<IActionResult> UpdateIncomeCategory(Guid id, [FromBody] CategoryRequest request)
         {
-            return await UpdateCategoryInternal(id, request, 1); // 1 = Income
+            return await UpdateCategoryInternal(id, request, Category.CategoryType.Income);
         }
 
-        private async Task<IActionResult> ReorderCategoryInternal(Guid id, ReorderCategoryRequest request, int type)
+        private async Task<IActionResult> ReorderCategoryInternal(Guid id, ReorderCategoryRequest request, Category.CategoryType type)
         {
             var (userId, success, message) = GetCurrentUserId();
             if (!success)
@@ -285,7 +285,7 @@ namespace SE114_MoneyApp_BE.Controllers
         [Authorize]
         public async Task<IActionResult> ReorderExpenseCategory(Guid id, [FromBody] ReorderCategoryRequest request)
         {
-            return await ReorderCategoryInternal(id, request, 0); // 0 = Expense
+            return await ReorderCategoryInternal(id, request, Category.CategoryType.Expense);
         }
 
         /// <summary>
@@ -298,7 +298,7 @@ namespace SE114_MoneyApp_BE.Controllers
         [Authorize]
         public async Task<IActionResult> ReorderIncomeCategory(Guid id, [FromBody] ReorderCategoryRequest request)
         {
-            return await ReorderCategoryInternal(id, request, 1); // 1 = Income
+            return await ReorderCategoryInternal(id, request, Category.CategoryType.Income);
         }
         #endregion
 

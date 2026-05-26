@@ -13,6 +13,7 @@ namespace SE114_MoneyApp_BE.Data
         public DbSet<AdjustBalance> AdjustBalances { get; set; }
         public DbSet<Transfer> Transfers { get; set; }
         public DbSet<Category> Categories { get; set; }
+        public DbSet<Transaction> Transactions { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
