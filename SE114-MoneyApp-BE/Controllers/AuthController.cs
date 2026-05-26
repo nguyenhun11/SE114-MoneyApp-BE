@@ -215,6 +215,21 @@ namespace SE114_MoneyApp_BE.Controllers
         }
 
         // POST: api/auth/refresh-token
+        /// <summary>
+        /// Cấp lại Access Token và Refresh Token mới (Cơ chế xoay vòng - Token Rotation)
+        /// </summary>
+        /// <remarks>
+        /// API này không được gọi qua thao tác bấm nút của người dùng. Nó được Frontend gọi ngầm (âm thầm) dưới nền khi Access Token cũ hết hạn.
+        /// 
+        /// Kịch bản tích hợp tại Frontend:
+        /// 1. Frontend gắn Access Token vào Header và gọi các API nghiệp vụ (ví dụ: Lấy danh sách giao dịch).
+        /// 2. Nếu Access Token hết hạn, Server trả về lỗi HTTP 401 (Unauthorized).
+        /// 3. Bộ đánh chặn (Interceptor/Authenticator) của Frontend bắt được lỗi 401 -> Dừng request cũ lại.
+        /// 4. Frontend tự động gọi API này, truyền Refresh Token đang lưu trong máy lên.
+        /// 5. Nhận cặp Token mới -> Cập nhật lại vào bộ nhớ cục bộ.
+        /// 6. Gắn Access Token mới vào Request bị lỗi ở Bước 1 và tự động gọi lại lần 2.
+        /// </remarks>
+        // POST: api/auth/refresh-token
         [HttpPost("refresh-token")]
         public async Task<ActionResult<AuthResponse>> RefreshToken([FromBody] RefreshTokenRequest request)
         {
@@ -258,6 +273,66 @@ namespace SE114_MoneyApp_BE.Controllers
             };
 
             return Ok(response);
+        }
+
+        // POST: api/auth/logout
+        /// <summary>
+        /// Đăng xuất và hủy Refresh Token hiện tại
+        /// </summary>
+        [HttpPost("logout")]
+        [Microsoft.AspNetCore.Authorization.Authorize] 
+        public async Task<IActionResult> Logout([FromBody] LogoutRequest request)
+        {
+            var tokenRecord = await _context.RefreshTokens
+                .FirstOrDefaultAsync(rt => rt.Token == request.RefreshToken);
+
+            if (tokenRecord != null)
+            {
+                _context.RefreshTokens.Remove(tokenRecord);
+                await _context.SaveChangesAsync();
+            }
+
+            return Ok(new { Message = "Đăng xuất thành công!" });
+        }
+
+        // POST: api/auth/change-password
+        /// <summary>
+        /// Đổi mật khẩu
+        /// </summary>
+        [HttpPost("change-password")]
+        [Microsoft.AspNetCore.Authorization.Authorize]
+        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
+        {
+            var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+            if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int userId))
+            {
+                return Unauthorized(new { Message = "Không thể xác định danh tính người dùng" });
+            }
+
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null || !user.IsActive)
+            {
+                return NotFound(new { Message = "Tài khoản không tồn tại hoặc đã bị khóa" });
+            }
+
+            // Người dùng đăng nhập bằng Google không có mật khẩu, không cho đổi
+            if (string.IsNullOrEmpty(user.PasswordHash))
+            {
+                return BadRequest(new { Message = "Tài khoản đăng nhập bằng Google không thể đổi mật khẩu qua chức năng này" });
+            }
+
+            // Kiểm tra mật khẩu cũ
+            bool isOldPasswordValid = BCrypt.Net.BCrypt.Verify(request.OldPassword, user.PasswordHash);
+            if (!isOldPasswordValid)
+            {
+                return BadRequest(new { Message = "Mật khẩu cũ không chính xác!" });
+            }
+
+            // Mã hóa và lưu mật khẩu mới
+            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { Message = "Đổi mật khẩu thành công!" });
         }
     }
 }
