@@ -2,6 +2,8 @@
 
 Dự án Backend cho ứng dụng quản lý thu chi cá nhân MoneyApp, được xây dựng trên nền tảng **ASP.NET Core 8 Web API** và **Entity Framework Core**.
 
+(http://nguyenhun11-001-site1.site4future.com/swagger/index.html)[http://nguyenhun11-001-site1.site4future.com/swagger/index.html]
+
 ## 🛠 1. Yêu cầu môi trường (Prerequisites)
 
 Trước khi chạy dự án, hãy đảm bảo máy tính của bạn đã cài đặt các công cụ sau:
