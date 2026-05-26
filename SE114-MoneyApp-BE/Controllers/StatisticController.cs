@@ -42,18 +42,21 @@ namespace SE114_MoneyApp_BE.Controllers
         private async Task<ActionResult<List<CategoryPieChartDto>>> GetPieChartInternal(
             DateTime startDate,
             DateTime endDate,
-            Category.CategoryType type)
+            Category.CategoryType type,
+            int timeZoneOffset)
         {
             var (userId, success, message) = GetCurrentUserId();
             if (!success) return Unauthorized(new { Message = message });
 
-            var endOfDay = endDate.Date.AddDays(1).AddTicks(-1);
+            // BƯỚC 1: Dịch khoảng thời gian sang chuẩn UTC để quét sạch giao dịch trong ngày
+            var utcStart = startDate.Date.AddHours(-timeZoneOffset);
+            var utcEnd = endDate.Date.AddDays(1).AddTicks(-1).AddHours(-timeZoneOffset);
 
             var query = await _context.Transactions
                 .Include(t => t.Category)
                 .Where(t => t.Account!.UserId == userId
-                         && t.TransactionDate >= startDate.Date
-                         && t.TransactionDate <= endOfDay
+                         && t.TransactionDate >= utcStart
+                         && t.TransactionDate <= utcEnd
                          && t.Category!.Type == type)
                 .GroupBy(t => new { t.CategoryId, t.Category!.CategoryName, t.Category.ColorId })
                 .Select(g => new CategoryPieChartDto
@@ -82,23 +85,27 @@ namespace SE114_MoneyApp_BE.Controllers
             DateTime startDate,
             DateTime endDate,
             GroupByPeriod groupBy,
-            Category.CategoryType type)
+            Category.CategoryType type,
+            int timeZoneOffset)
         {
             var (userId, success, message) = GetCurrentUserId();
             if (!success) return Unauthorized(new { Message = message });
 
-            var endOfDay = endDate.Date.AddDays(1).AddTicks(-1);
+            // BƯỚC 1: Dịch khoảng thời gian sang chuẩn UTC
+            var utcStart = startDate.Date.AddHours(-timeZoneOffset);
+            var utcEnd = endDate.Date.AddDays(1).AddTicks(-1).AddHours(-timeZoneOffset);
 
             var transactions = await _context.Transactions
                 .Include(t => t.Category)
                 .Where(t => t.Account!.UserId == userId
-                         && t.TransactionDate >= startDate.Date
-                         && t.TransactionDate <= endOfDay
-                         && t.Category!.Type == type) // Truyền type (Expense/Income) vào đây
+                         && t.TransactionDate >= utcStart
+                         && t.TransactionDate <= utcEnd
+                         && t.Category!.Type == type)
                 .ToListAsync();
 
+            // BƯỚC 2: Cộng lại giờ Local khi gom nhóm để hiện biểu đồ chuẩn
             var stackedData = transactions
-                .GroupBy(t => GetPeriodLabel(t.TransactionDate, groupBy))
+                .GroupBy(t => GetPeriodLabel(t.TransactionDate.AddHours(timeZoneOffset), groupBy))
                 .Select(gDay => new StackedBarChartDto
                 {
                     Period = gDay.Key,
@@ -112,7 +119,7 @@ namespace SE114_MoneyApp_BE.Controllers
                             TotalAmount = gCat.Sum(t => t.Amount)
                         }).ToList()
                 })
-                .OrderBy(x => transactions.First(t => GetPeriodLabel(t.TransactionDate, groupBy) == x.Period).TransactionDate)
+                .OrderBy(x => transactions.First(t => GetPeriodLabel(t.TransactionDate.AddHours(timeZoneOffset), groupBy) == x.Period).TransactionDate)
                 .ToList();
 
             return Ok(stackedData);
@@ -125,85 +132,87 @@ namespace SE114_MoneyApp_BE.Controllers
         /// <summary>
         /// Biểu đồ tròn các hạng mục chi tiêu
         /// </summary>
-        /// <param name="startDate"></param>
-        /// <param name="endDate"></param>
-        /// <returns></returns>
         [HttpGet("pie-chart/expense")]
-        public async Task<ActionResult<List<CategoryPieChartDto>>> GetExpensePieChart([FromQuery] DateTime startDate, [FromQuery] DateTime endDate)
+        public async Task<ActionResult<List<CategoryPieChartDto>>> GetExpensePieChart(
+            [FromQuery] DateTime startDate,
+            [FromQuery] DateTime endDate,
+            [FromQuery] int timeZoneOffset = 7) // Thêm biến nhận múi giờ từ Android
         {
-            return await GetPieChartInternal(startDate, endDate, Category.CategoryType.Expense);
+            return await GetPieChartInternal(startDate, endDate, Category.CategoryType.Expense, timeZoneOffset);
         }
 
         /// <summary>
         /// Biểu đồ tròn các hạng mục thu nhập
         /// </summary>
-        /// <param name="startDate"></param>
-        /// <param name="endDate"></param>
-        /// <returns></returns>
         [HttpGet("pie-chart/income")]
-        public async Task<ActionResult<List<CategoryPieChartDto>>> GetIncomePieChart([FromQuery] DateTime startDate, [FromQuery] DateTime endDate)
+        public async Task<ActionResult<List<CategoryPieChartDto>>> GetIncomePieChart(
+            [FromQuery] DateTime startDate,
+            [FromQuery] DateTime endDate,
+            [FromQuery] int timeZoneOffset = 7)
         {
-            return await GetPieChartInternal(startDate, endDate, Category.CategoryType.Income);
+            return await GetPieChartInternal(startDate, endDate, Category.CategoryType.Income, timeZoneOffset);
         }
 
         /// <summary>
         /// Biểu đồ cột chồng các chi tiêu
         /// </summary>
-        /// <param name="startDate"></param>
-        /// <param name="endDate"></param>
-        /// <param name="groupBy"></param>
-        /// <returns></returns>
         [HttpGet("stacked-bar-chart/expense")]
-        public async Task<ActionResult<List<StackedBarChartDto>>> GetExpenseStackedBarChart([FromQuery] DateTime startDate, [FromQuery] DateTime endDate, [FromQuery] GroupByPeriod groupBy = GroupByPeriod.Month)
+        public async Task<ActionResult<List<StackedBarChartDto>>> GetExpenseStackedBarChart(
+            [FromQuery] DateTime startDate,
+            [FromQuery] DateTime endDate,
+            [FromQuery] GroupByPeriod groupBy = GroupByPeriod.Month,
+            [FromQuery] int timeZoneOffset = 7)
         {
-            return await GetStackedBarChartInternal(startDate, endDate, groupBy, Category.CategoryType.Expense);
+            return await GetStackedBarChartInternal(startDate, endDate, groupBy, Category.CategoryType.Expense, timeZoneOffset);
         }
 
         /// <summary>
         /// Biểu đồ cột chồng các thu nhập
         /// </summary>
-        /// <param name="startDate"></param>
-        /// <param name="endDate"></param>
-        /// <param name="groupBy"></param>
-        /// <returns></returns>
         [HttpGet("stacked-bar-chart/income")]
-        public async Task<ActionResult<List<StackedBarChartDto>>> GetIncomeStackedBarChart([FromQuery] DateTime startDate, [FromQuery] DateTime endDate, [FromQuery] GroupByPeriod groupBy = GroupByPeriod.Month)
+        public async Task<ActionResult<List<StackedBarChartDto>>> GetIncomeStackedBarChart(
+            [FromQuery] DateTime startDate,
+            [FromQuery] DateTime endDate,
+            [FromQuery] GroupByPeriod groupBy = GroupByPeriod.Month,
+            [FromQuery] int timeZoneOffset = 7)
         {
-            return await GetStackedBarChartInternal(startDate, endDate, groupBy, Category.CategoryType.Income);
+            return await GetStackedBarChartInternal(startDate, endDate, groupBy, Category.CategoryType.Income, timeZoneOffset);
         }
 
         /// <summary>
-        /// Biểu đồ dòng tiền
+        /// Biểu đồ dòng tiền (Cơ cấu Thu/Chi và Hiệu số)
         /// </summary>
-        /// <param name="startDate"></param>
-        /// <param name="endDate"></param>
-        /// <param name="groupBy"></param>
-        /// <returns></returns>
         [HttpGet("bar-chart/cashflow")]
         public async Task<ActionResult<List<CashFlowBarChartDto>>> GetCashFlowBarChart(
             [FromQuery] DateTime startDate,
             [FromQuery] DateTime endDate,
-            [FromQuery] GroupByPeriod groupBy = GroupByPeriod.Month)
+            [FromQuery] GroupByPeriod groupBy = GroupByPeriod.Month,
+            [FromQuery] int timeZoneOffset = 7) // Áp dụng đồng bộ cho Dòng tiền
         {
             var (userId, success, message) = GetCurrentUserId();
             if (!success) return Unauthorized(new { Message = message });
 
-            var endOfDay = endDate.Date.AddDays(1).AddTicks(-1);
+            // BƯỚC 1: Dịch sang UTC
+            var utcStart = startDate.Date.AddHours(-timeZoneOffset);
+            var utcEnd = endDate.Date.AddDays(1).AddTicks(-1).AddHours(-timeZoneOffset);
 
             var transactions = await _context.Transactions
                 .Include(t => t.Category)
-                .Where(t => t.Account!.UserId == userId && t.TransactionDate >= startDate.Date && t.TransactionDate <= endOfDay)
+                .Where(t => t.Account!.UserId == userId
+                         && t.TransactionDate >= utcStart
+                         && t.TransactionDate <= utcEnd)
                 .ToListAsync();
 
+            // BƯỚC 2: Cộng bù giờ Local khi gom nhóm
             var cashFlow = transactions
-                .GroupBy(t => GetPeriodLabel(t.TransactionDate, groupBy))
+                .GroupBy(t => GetPeriodLabel(t.TransactionDate.AddHours(timeZoneOffset), groupBy))
                 .Select(g => new CashFlowBarChartDto
                 {
                     Period = g.Key,
                     TotalIncome = g.Where(t => t.Category!.Type == Category.CategoryType.Income).Sum(t => t.Amount),
                     TotalExpense = g.Where(t => t.Category!.Type == Category.CategoryType.Expense).Sum(t => t.Amount)
                 })
-                .OrderBy(x => transactions.First(t => GetPeriodLabel(t.TransactionDate, groupBy) == x.Period).TransactionDate)
+                .OrderBy(x => transactions.First(t => GetPeriodLabel(t.TransactionDate.AddHours(timeZoneOffset), groupBy) == x.Period).TransactionDate)
                 .ToList();
 
             return Ok(cashFlow);

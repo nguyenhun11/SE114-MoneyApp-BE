@@ -20,6 +20,7 @@ namespace SE114_MoneyApp_BE.Controllers
             Email = user.Email,
             ImageUrl = user.ImageUrl,
             PhoneNumber = user.PhoneNumber,
+            DailyStreak = user.DailyStreak,
             CreatedAt = user.CreatedAt,
             LastUpdatedAt = user.LastUpdatedAt
         };
@@ -28,33 +29,50 @@ namespace SE114_MoneyApp_BE.Controllers
         /// <summary>
         /// Lấy thông tin người dùng hiện tại
         /// </summary>
-        /// <param name="id"></param>
-        /// <returns></returns>
         [HttpGet]
-        public async Task<ActionResult<UserProfileResponse>> GetUser()
+        public async Task<ActionResult<UserProfileResponse>> GetUser([FromQuery] DateTime? clientToday)
         {
             var (userId, success, message) = GetCurrentUserId();
-            if (!success)
+            if (!success) return Unauthorized(new { Message = message });
+
+            var user = await _context.Users
+                .FirstOrDefaultAsync(u => u.Id == userId && u.IsActive == true);
+
+            if (user == null) return NotFound(new { message = "Không tìm thấy người dùng" });
+
+            int displayStreak = user.DailyStreak;
+
+            // Nếu Android có truyền ngày lên, ta mới check đứt chuỗi
+            if (user.LastActiveDate.HasValue && clientToday.HasValue)
             {
-                return Unauthorized(new { Message = message });
+                DateTime today = clientToday.Value.Date; // Bỏ hoàn toàn UTC.AddHours(7)
+                DateTime lastActiveDay = user.LastActiveDate.Value.Date;
+
+                if (lastActiveDay < today.AddDays(-1))
+                {
+                    displayStreak = 0;
+                    user.DailyStreak = 0;
+                    await _context.SaveChangesAsync();
+                }
+            }
+            else if (!user.LastActiveDate.HasValue)
+            {
+                displayStreak = 0;
             }
 
-            var userProfile = await _context.Users
-                .Where(u => u.Id == userId && u.IsActive == true)
-                .Select(MapToUserProfileResponse)
-                .FirstOrDefaultAsync();
-            
-            if (userProfile == null)
+            var response = new UserProfileResponse
             {
-                return NotFound(new
-                {
-                    message = "Không tìm thấy người dùng hoặc tài khoản đã bị vô hiệu hóa."
-                });
-            }
-            else
-            {
-                return Ok(userProfile);
-            }
+                Id = user.Id,
+                Name = user.Name,
+                Email = user.Email,
+                ImageUrl = user.ImageUrl,
+                PhoneNumber = user.PhoneNumber,
+                DailyStreak = displayStreak,
+                CreatedAt = user.CreatedAt,
+                LastUpdatedAt = user.LastUpdatedAt
+            };
+
+            return Ok(response);
         }
 
         // GET: api/User/search?email=... hoặc api/user/search?phone=...
@@ -273,6 +291,63 @@ namespace SE114_MoneyApp_BE.Controllers
             await _context.SaveChangesAsync();
 
             return Ok(new { Message = "Đã xử lý xóa tài khoản thành công!" });
+        }
+
+        // POST: api/user/checkin
+        /// <summary>
+        /// Ghi nhận hoạt động trong ngày để tăng chuỗi (Streak)
+        /// </summary>
+        /// <returns></returns>
+        [HttpPost("checkin")]
+        public async Task<IActionResult> DailyCheckIn([FromBody] CheckInRequest request)
+        {
+            var (userId, success, message) = GetCurrentUserId();
+            if (!success) return Unauthorized(new { Message = message });
+
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId && u.IsActive);
+            if (user == null) return NotFound(new { Message = "Không tìm thấy người dùng." });
+
+            // Dùng trực tiếp ngày mà điện thoại Android báo cáo lên (đã bỏ được số 7)
+            DateTime clientToday = request.ClientToday.Date;
+
+            bool isStreakIncreased = false;
+            string responseMessage = "";
+
+            if (!user.LastActiveDate.HasValue)
+            {
+                user.DailyStreak = 1;
+                user.LastActiveDate = clientToday; // Lưu luôn cái ngày client này xuống DB
+                isStreakIncreased = true;
+                responseMessage = "Khởi đầu tuyệt vời! Chuỗi ngày của bạn đã bắt đầu.";
+            }
+            else
+            {
+                DateTime lastActiveDay = user.LastActiveDate.Value.Date;
+
+                if (lastActiveDay == clientToday)
+                {
+                    return Ok(new { Message = "Bạn đã điểm danh hôm nay rồi!", CurrentStreak = user.DailyStreak, IsIncreased = false });
+                }
+                else if (lastActiveDay == clientToday.AddDays(-1))
+                {
+                    user.DailyStreak += 1;
+                    user.LastActiveDate = clientToday;
+                    isStreakIncreased = true;
+                    responseMessage = $"Tuyệt vời! Bạn đã đạt chuỗi {user.DailyStreak} ngày liên tiếp.";
+                }
+                else
+                {
+                    user.DailyStreak = 1;
+                    user.LastActiveDate = clientToday;
+                    isStreakIncreased = true;
+                    responseMessage = "Chuỗi đã bị đặt lại. Bắt đầu hành trình mới nào!";
+                }
+            }
+
+            user.LastUpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+
+            return Ok(new { Message = responseMessage, CurrentStreak = user.DailyStreak, IsIncreased = isStreakIncreased });
         }
     }
 }
