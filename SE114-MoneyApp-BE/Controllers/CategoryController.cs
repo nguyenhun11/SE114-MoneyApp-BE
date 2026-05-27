@@ -55,9 +55,7 @@ namespace SE114_MoneyApp_BE.Controllers
         [HttpGet("expense")]
         public async Task<ActionResult<List<CategoryResponse>>> GetExpenseCategories()
         {
-            var expenseCategories = await GetCategories(Category.CategoryType.Expense);
-
-            return Ok(expenseCategories);
+            return await GetCategories(Category.CategoryType.Expense);
         }
 
         // GET: api/Category/income/5
@@ -68,9 +66,7 @@ namespace SE114_MoneyApp_BE.Controllers
         [HttpGet("income")]
         public async Task<ActionResult<List<CategoryResponse>>> GetIncomeCategories()
         {
-            var incomeCategories = await GetCategories(Category.CategoryType.Income);
-
-            return Ok(incomeCategories);
+            return await GetCategories(Category.CategoryType.Income);
         }
 
         // GET: api/Category/...

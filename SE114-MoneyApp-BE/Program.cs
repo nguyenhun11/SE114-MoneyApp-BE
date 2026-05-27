@@ -71,11 +71,11 @@ builder.Services.AddAuthorization();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
+//if (app.Environment.IsDevelopment())
+//{
     app.UseSwagger();
     app.UseSwaggerUI();
-}
+//}
 
 app.UseHttpsRedirection();
 
@@ -84,5 +84,23 @@ app.UseAuthentication(); // Xác thực danh tính
 app.UseAuthorization();
 
 app.MapControllers();
+
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        var context = services.GetRequiredService<AppDbContext>();
+        // Tùy chọn: Tự động chạy Migration nếu chưa update DB
+        // await context.Database.MigrateAsync(); 
+
+        await DbSeeder.SeedDataAsync(context);
+    }
+    catch (Exception ex)
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "Đã có lỗi xảy ra trong quá trình Seed dữ liệu.");
+    }
+}
 
 app.Run();

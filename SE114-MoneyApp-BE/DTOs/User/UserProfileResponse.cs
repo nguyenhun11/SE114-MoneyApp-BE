@@ -8,6 +8,7 @@
         public string? ImageUrl { get; set; }
         public string? PhoneNumber { get; set; }
         public int DailyStreak { get; set; }
+        public bool TodayCheckedIn { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime LastUpdatedAt { get; set; }
     }

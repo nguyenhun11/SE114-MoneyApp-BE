@@ -68,6 +68,7 @@ namespace SE114_MoneyApp_BE.Controllers
                 ImageUrl = user.ImageUrl,
                 PhoneNumber = user.PhoneNumber,
                 DailyStreak = displayStreak,
+                TodayCheckedIn = user.LastActiveDate.HasValue && user.LastActiveDate.Value.Date == DateTime.UtcNow.Date,
                 CreatedAt = user.CreatedAt,
                 LastUpdatedAt = user.LastUpdatedAt
             };
