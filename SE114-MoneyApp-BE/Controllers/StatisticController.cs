@@ -42,7 +42,7 @@ namespace SE114_MoneyApp_BE.Controllers
         private async Task<ActionResult<List<CategoryPieChartDto>>> GetPieChartInternal(
             DateTime startDate,
             DateTime endDate,
-            Category.CategoryType type,
+            CategoryType type,
             int timeZoneOffset)
         {
             var (userId, success, message) = GetCurrentUserId();
@@ -85,7 +85,7 @@ namespace SE114_MoneyApp_BE.Controllers
             DateTime startDate,
             DateTime endDate,
             GroupByPeriod groupBy,
-            Category.CategoryType type,
+            CategoryType type,
             int timeZoneOffset)
         {
             var (userId, success, message) = GetCurrentUserId();
@@ -138,7 +138,7 @@ namespace SE114_MoneyApp_BE.Controllers
             [FromQuery] DateTime endDate,
             [FromQuery] int timeZoneOffset = 7) // Thêm biến nhận múi giờ từ Android
         {
-            return await GetPieChartInternal(startDate, endDate, Category.CategoryType.Expense, timeZoneOffset);
+            return await GetPieChartInternal(startDate, endDate, CategoryType.Expense, timeZoneOffset);
         }
 
         /// <summary>
@@ -150,7 +150,7 @@ namespace SE114_MoneyApp_BE.Controllers
             [FromQuery] DateTime endDate,
             [FromQuery] int timeZoneOffset = 7)
         {
-            return await GetPieChartInternal(startDate, endDate, Category.CategoryType.Income, timeZoneOffset);
+            return await GetPieChartInternal(startDate, endDate, CategoryType.Income, timeZoneOffset);
         }
 
         /// <summary>
@@ -163,7 +163,7 @@ namespace SE114_MoneyApp_BE.Controllers
             [FromQuery] GroupByPeriod groupBy = GroupByPeriod.Month,
             [FromQuery] int timeZoneOffset = 7)
         {
-            return await GetStackedBarChartInternal(startDate, endDate, groupBy, Category.CategoryType.Expense, timeZoneOffset);
+            return await GetStackedBarChartInternal(startDate, endDate, groupBy, CategoryType.Expense, timeZoneOffset);
         }
 
         /// <summary>
@@ -176,7 +176,7 @@ namespace SE114_MoneyApp_BE.Controllers
             [FromQuery] GroupByPeriod groupBy = GroupByPeriod.Month,
             [FromQuery] int timeZoneOffset = 7)
         {
-            return await GetStackedBarChartInternal(startDate, endDate, groupBy, Category.CategoryType.Income, timeZoneOffset);
+            return await GetStackedBarChartInternal(startDate, endDate, groupBy, CategoryType.Income, timeZoneOffset);
         }
 
         /// <summary>
@@ -209,8 +209,8 @@ namespace SE114_MoneyApp_BE.Controllers
                 .Select(g => new CashFlowBarChartDto
                 {
                     Period = g.Key,
-                    TotalIncome = g.Where(t => t.Category!.Type == Category.CategoryType.Income).Sum(t => t.Amount),
-                    TotalExpense = g.Where(t => t.Category!.Type == Category.CategoryType.Expense).Sum(t => t.Amount)
+                    TotalIncome = g.Where(t => t.Category!.Type == CategoryType.Income).Sum(t => t.Amount),
+                    TotalExpense = g.Where(t => t.Category!.Type == CategoryType.Expense).Sum(t => t.Amount)
                 })
                 .OrderBy(x => transactions.First(t => GetPeriodLabel(t.TransactionDate.AddHours(timeZoneOffset), groupBy) == x.Period).TransactionDate)
                 .ToList();

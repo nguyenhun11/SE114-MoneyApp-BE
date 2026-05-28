@@ -24,7 +24,7 @@ namespace SE114_MoneyApp_BE.Models
         public bool IsActive { get; set; } = true;
 
         [ForeignKey("UserId")]
-        public virtual User? User { get; set; }
+        public User? User { get; set; }
 
     }
 }

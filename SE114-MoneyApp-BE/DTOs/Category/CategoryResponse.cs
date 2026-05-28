@@ -6,7 +6,9 @@ namespace SE114_MoneyApp_BE.DTOs.Category
     {
         public Guid Id { get; set; }
         public string CategoryName { get; set; } = string.Empty;
-        public Models.Category.CategoryType Type { get; set; }
+        public CategoryType Type { get; set; }
+        public Guid GroupId { get; set; }
+        public String GroupName { get; set; } = string.Empty;
         public decimal MonthlyTarget { get; set; }
         public int ColorId { get; set; }
         public int IconId { get; set; }

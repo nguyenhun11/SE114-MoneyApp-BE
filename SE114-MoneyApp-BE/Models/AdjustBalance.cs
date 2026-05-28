@@ -15,6 +15,6 @@ namespace SE114_MoneyApp_BE.Models
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         [ForeignKey("AccountId")]
-        public virtual Account? Account { get; set; }
+        public Account? Account { get; set; }
     }
 }

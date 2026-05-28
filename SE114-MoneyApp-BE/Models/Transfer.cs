@@ -17,9 +17,9 @@ namespace SE114_MoneyApp_BE.Models
         public DateTime LastUpdatedAt { get; set; } = DateTime.UtcNow;
 
         [ForeignKey("SourceAccountId")]
-        public virtual Account? Source { get; set; }
+        public Account? Source { get; set; }
 
         [ForeignKey("DestinationAccountId")]
-        public virtual Account? Destination { get; set; }
+        public Account? Destination { get; set; }
     }
 }

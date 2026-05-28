@@ -26,7 +26,9 @@ namespace SE114_MoneyApp_BE.Controllers
             Balance = account.Balance,
             Description = account.Description,
             IncludeInTotalBalance = account.IncludeInTotalBalance,
-            SortingOrder = account.SortingOrder
+            SortingOrder = account.SortingOrder,
+            CreatedAt = account.CreatedAt,
+            LastUpdatedAt = account.LastUpdatedAt
         };
 
 

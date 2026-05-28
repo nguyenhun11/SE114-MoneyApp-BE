@@ -41,7 +41,7 @@ namespace SE114_MoneyApp_BE.Controllers
         [HttpGet]
         public async Task<ActionResult<List<TransactionResponse>>> GetTransactions( [FromQuery] DateTime? startDate,
             [FromQuery] DateTime? endDate,
-            [FromQuery] Category.CategoryType? categoryType,
+            [FromQuery] CategoryType? categoryType,
             [FromQuery] Guid? accountId,
             [FromQuery] Guid? categoryId)
         {
@@ -66,7 +66,7 @@ namespace SE114_MoneyApp_BE.Controllers
                 var endOfDay = endDate.Value.Date.AddDays(1).AddTicks(-1);
                 query = query.Where(t => t.TransactionDate <= endOfDay);
             }
-            if (categoryType.HasValue && categoryType.Value != Category.CategoryType.All)
+            if (categoryType.HasValue && categoryType.Value != CategoryType.All)
             {
                 query = query.Where(t => t.Category!.Type == categoryType.Value);
             }
@@ -153,10 +153,10 @@ namespace SE114_MoneyApp_BE.Controllers
 
             switch (category.Type)
             {
-                case Category.CategoryType.Expense:
+                case CategoryType.Expense:
                     account.Balance -= request.Amount;
                     break;
-                case Category.CategoryType.Income:
+                case CategoryType.Income:
                     account.Balance += request.Amount;
                     break;
                 default:
@@ -200,10 +200,10 @@ namespace SE114_MoneyApp_BE.Controllers
             {
                 switch (oldCategory.Type)
                 {
-                    case Category.CategoryType.Expense:
+                    case CategoryType.Expense:
                         oldAccount.Balance += transaction.Amount;
                         break;
-                    case Category.CategoryType.Income:
+                    case CategoryType.Income:
                         oldAccount.Balance -= transaction.Amount;
                         break;
                     default:
@@ -230,10 +230,10 @@ namespace SE114_MoneyApp_BE.Controllers
             transaction.LastUpdatedAt = DateTime.UtcNow;
             switch (newCategory.Type)
             {
-                case Category.CategoryType.Expense:
+                case CategoryType.Expense:
                     newAccount.Balance -= request.Amount;
                     break;
-                case Category.CategoryType.Income:
+                case CategoryType.Income:
                     newAccount.Balance += request.Amount;
                     break;
                 default:
@@ -269,10 +269,10 @@ namespace SE114_MoneyApp_BE.Controllers
 
             switch (transaction.Category!.Type)
             {
-                case Category.CategoryType.Expense:
+                case CategoryType.Expense:
                     transaction.Account!.Balance += transaction.Amount; // Hoàn tiền
                     break;
-                case Category.CategoryType.Income:
+                case CategoryType.Income:
                     transaction.Account!.Balance -= transaction.Amount;
                     break;
             }
