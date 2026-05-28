@@ -71,7 +71,8 @@ namespace SE114_MoneyApp_BE.Data
                 Balance = 2_350_000,
                 ColorId = 1,
                 IconId = 1,
-                IncludeInTotalBalance = true
+                IncludeInTotalBalance = true,
+                SortingOrder = 0
             };
             var u1TPBank = new Account
             {
@@ -80,7 +81,8 @@ namespace SE114_MoneyApp_BE.Data
                 Balance = 18_500_000,
                 ColorId = 2,
                 IconId = 2,
-                IncludeInTotalBalance = true
+                IncludeInTotalBalance = true,
+                SortingOrder = 1
             };
             var u1VCB = new Account
             {
@@ -89,7 +91,8 @@ namespace SE114_MoneyApp_BE.Data
                 Balance = 45_000_000,
                 ColorId = 3,
                 IconId = 3,
-                IncludeInTotalBalance = true
+                IncludeInTotalBalance = true,
+                SortingOrder = 2
             };
             var u1MBBank = new Account
             {
@@ -98,7 +101,8 @@ namespace SE114_MoneyApp_BE.Data
                 Balance = 5_200_000,
                 ColorId = 4,
                 IconId = 4,
-                IncludeInTotalBalance = true
+                IncludeInTotalBalance = true,
+                SortingOrder = 3
             };
             var u1Savings = new Account
             {
@@ -107,7 +111,8 @@ namespace SE114_MoneyApp_BE.Data
                 Balance = 100_000_000,
                 ColorId = 5,
                 IconId = 5,
-                IncludeInTotalBalance = false   // không tính vào tổng
+                IncludeInTotalBalance = false,   // không tính vào tổng
+                SortingOrder = 4
             };
             var u1MoMo = new Account
             {
@@ -116,7 +121,8 @@ namespace SE114_MoneyApp_BE.Data
                 Balance = 750_000,
                 ColorId = 6,
                 IconId = 6,
-                IncludeInTotalBalance = true
+                IncludeInTotalBalance = true,
+                SortingOrder = 5
             };
             context.Accounts.AddRange(u1Cash, u1TPBank, u1VCB, u1MBBank, u1Savings, u1MoMo);
 
@@ -128,7 +134,8 @@ namespace SE114_MoneyApp_BE.Data
                 Balance = 800_000,
                 ColorId = 1,
                 IconId = 1,
-                IncludeInTotalBalance = true
+                IncludeInTotalBalance = true,
+                SortingOrder = 0
             };
             var u2Techcombank = new Account
             {
@@ -137,7 +144,8 @@ namespace SE114_MoneyApp_BE.Data
                 Balance = 22_000_000,
                 ColorId = 2,
                 IconId = 2,
-                IncludeInTotalBalance = true
+                IncludeInTotalBalance = true,
+                SortingOrder = 1
             };
             var u2ZaloPay = new Account
             {
@@ -146,7 +154,8 @@ namespace SE114_MoneyApp_BE.Data
                 Balance = 300_000,
                 ColorId = 7,
                 IconId = 7,
-                IncludeInTotalBalance = true
+                IncludeInTotalBalance = true,
+                SortingOrder = 2
             };
             context.Accounts.AddRange(u2Cash, u2Techcombank, u2ZaloPay);
 
@@ -158,7 +167,8 @@ namespace SE114_MoneyApp_BE.Data
                 Balance = 500_000,
                 ColorId = 1,
                 IconId = 1,
-                IncludeInTotalBalance = true
+                IncludeInTotalBalance = true,
+                SortingOrder = 0
             };
             var u3VietinBank = new Account
             {
@@ -167,7 +177,8 @@ namespace SE114_MoneyApp_BE.Data
                 Balance = 3_000_000,
                 ColorId = 2,
                 IconId = 2,
-                IncludeInTotalBalance = true
+                IncludeInTotalBalance = true,
+                SortingOrder = 1
             };
             context.Accounts.AddRange(u3Cash, u3VietinBank);
 
