@@ -247,11 +247,11 @@ namespace SE114_MoneyApp_BE.Data
             var c2Food = new Category { User = user2, CategoryGroup = ug2Daily, CategoryName = "Ăn uống", ColorId = 1, IconId = 1, SortingOrder = 0 };
             var c2Shopping = new Category { User = user2, CategoryGroup = ug2Daily, CategoryName = "Mua sắm", ColorId = 2, IconId = 2, SortingOrder = 1 };
             var c2Transport = new Category { User = user2, CategoryGroup = ug2Daily, CategoryName = "Di chuyển", ColorId = 3, IconId = 3, SortingOrder = 2 };
-            var c2DefaultExpense = new Category { User = user2, CategoryGroup = ug2ExpOther, CategoryName = "Khác", ColorId = 6, IconId = 6, IsDefault = true, SortingOrder = 0 };
+            var c2DefaultExpense = new Category { User = user2, CategoryGroup = ug2ExpOther, CategoryName = "Khác", ColorId = 6, IconId = 6, SortingOrder = 0 };
 
             var c2Salary = new Category { User = user2, CategoryGroup = ug2Income, CategoryName = "Lương", ColorId = 4, IconId = 4, SortingOrder = 0 };
             var c2SideJob = new Category { User = user2, CategoryGroup = ug2Income, CategoryName = "Việc phụ", ColorId = 5, IconId = 5, SortingOrder = 1 };
-            var c2DefaultIncome = new Category { User = user2, CategoryGroup = ug2Income, CategoryName = "Khác", ColorId = 7, IconId = 7, IsDefault = true, SortingOrder = 2 };
+            var c2DefaultIncome = new Category { User = user2, CategoryGroup = ug2Income, CategoryName = "Khác", ColorId = 7, IconId = 7, SortingOrder = 2 };
 
             context.Categories.AddRange(c2Food, c2Shopping, c2Transport, c2Salary, c2SideJob, c2DefaultExpense, c2DefaultIncome);
 
@@ -265,10 +265,10 @@ namespace SE114_MoneyApp_BE.Data
             context.CategoryGroups.AddRange(ug3Expense, ug3Income);
 
             var c3Food = new Category { User = user3, CategoryGroup = ug3Expense, CategoryName = "Ăn uống", ColorId = 1, IconId = 1, SortingOrder = 0 };
-            var c3DefaultExpense = new Category { User = user3, CategoryGroup = ug3Expense, CategoryName = "Khác", ColorId = 3, IconId = 3, IsDefault = true, SortingOrder = 1 };
+            var c3DefaultExpense = new Category { User = user3, CategoryGroup = ug3Expense, CategoryName = "Khác", ColorId = 3, IconId = 3, SortingOrder = 1 };
 
             var c3Salary = new Category { User = user3, CategoryGroup = ug3Income, CategoryName = "Lương", ColorId = 2, IconId = 2, SortingOrder = 0 };
-            var c3DefaultIncome = new Category { User = user3, CategoryGroup = ug3Income, CategoryName = "Khác", ColorId = 4, IconId = 4, IsDefault = true, SortingOrder = 1 };
+            var c3DefaultIncome = new Category { User = user3, CategoryGroup = ug3Income, CategoryName = "Khác", ColorId = 4, IconId = 4, SortingOrder = 1 };
 
             context.Categories.AddRange(c3Food, c3Salary, c3DefaultExpense, c3DefaultIncome);
 
