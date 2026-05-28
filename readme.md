@@ -1,8 +1,12 @@
+Đã deploy và public API, mong không bị gì =))) Chỉ cần lên link này là xem và gọi được hết   
+[http://nguyenhun11-001-site1.site4future.com/swagger/index.html](http://nguyenhun11-001-site1.site4future.com/swagger/index.html)
+
+
+
 # 💰 MoneyApp - Quản lý tài chính cá nhân (Back-end)
 
 Dự án Backend cho ứng dụng quản lý thu chi cá nhân MoneyApp, được xây dựng trên nền tảng **ASP.NET Core 8 Web API** và **Entity Framework Core**.
 
-[http://nguyenhun11-001-site1.site4future.com/swagger/index.html](http://nguyenhun11-001-site1.site4future.com/swagger/index.html)
 
 ## 🛠 1. Yêu cầu môi trường (Prerequisites)
 
