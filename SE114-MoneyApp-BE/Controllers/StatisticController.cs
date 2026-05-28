@@ -57,7 +57,7 @@ namespace SE114_MoneyApp_BE.Controllers
                 .Where(t => t.Account!.UserId == userId
                          && t.TransactionDate >= utcStart
                          && t.TransactionDate <= utcEnd
-                         && t.Category!.Type == type)
+                         && t.Category!.CategoryGroup!.Type == type)
                 .GroupBy(t => new { t.CategoryId, t.Category!.CategoryName, t.Category.ColorId })
                 .Select(g => new CategoryPieChartDto
                 {
@@ -100,7 +100,7 @@ namespace SE114_MoneyApp_BE.Controllers
                 .Where(t => t.Account!.UserId == userId
                          && t.TransactionDate >= utcStart
                          && t.TransactionDate <= utcEnd
-                         && t.Category!.Type == type)
+                         && t.Category!.CategoryGroup!.Type == type)
                 .ToListAsync();
 
             // BƯỚC 2: Cộng lại giờ Local khi gom nhóm để hiện biểu đồ chuẩn
@@ -209,8 +209,8 @@ namespace SE114_MoneyApp_BE.Controllers
                 .Select(g => new CashFlowBarChartDto
                 {
                     Period = g.Key,
-                    TotalIncome = g.Where(t => t.Category!.Type == CategoryType.Income).Sum(t => t.Amount),
-                    TotalExpense = g.Where(t => t.Category!.Type == CategoryType.Expense).Sum(t => t.Amount)
+                    TotalIncome = g.Where(t => t.Category!.CategoryGroup!.Type == CategoryType.Income).Sum(t => t.Amount),
+                    TotalExpense = g.Where(t => t.Category!.CategoryGroup!.Type == CategoryType.Expense).Sum(t => t.Amount)
                 })
                 .OrderBy(x => transactions.First(t => GetPeriodLabel(t.TransactionDate.AddHours(timeZoneOffset), groupBy) == x.Period).TransactionDate)
                 .ToList();

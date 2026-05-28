@@ -68,7 +68,7 @@ namespace SE114_MoneyApp_BE.Controllers
             }
             if (categoryType.HasValue && categoryType.Value != CategoryType.All)
             {
-                query = query.Where(t => t.Category!.Type == categoryType.Value);
+                query = query.Where(t => t.Category!.CategoryGroup!.Type == categoryType.Value);
             }
             if (accountId.HasValue)
             {
@@ -151,7 +151,7 @@ namespace SE114_MoneyApp_BE.Controllers
                 ImageUrls = request.ImageUrls
             };
 
-            switch (category.Type)
+            switch (category.CategoryGroup!.Type)
             {
                 case CategoryType.Expense:
                     account.Balance -= request.Amount;
@@ -198,7 +198,7 @@ namespace SE114_MoneyApp_BE.Controllers
 
             if (oldAccount != null && oldCategory != null)
             {
-                switch (oldCategory.Type)
+                switch (oldCategory.CategoryGroup!.Type)
                 {
                     case CategoryType.Expense:
                         oldAccount.Balance += transaction.Amount;
@@ -228,7 +228,7 @@ namespace SE114_MoneyApp_BE.Controllers
             transaction.Note = request.Note;
             transaction.ImageUrls = request.ImageUrls;
             transaction.LastUpdatedAt = DateTime.UtcNow;
-            switch (newCategory.Type)
+            switch (newCategory.CategoryGroup!.Type)
             {
                 case CategoryType.Expense:
                     newAccount.Balance -= request.Amount;
@@ -267,7 +267,7 @@ namespace SE114_MoneyApp_BE.Controllers
                 return NotFound("Không tìm thấy giao dịch hoặc không có quyền truy cập");
             }
 
-            switch (transaction.Category!.Type)
+            switch (transaction.Category!.CategoryGroup!.Type)
             {
                 case CategoryType.Expense:
                     transaction.Account!.Balance += transaction.Amount; // Hoàn tiền

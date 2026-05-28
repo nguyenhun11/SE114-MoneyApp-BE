@@ -15,7 +15,6 @@ namespace SE114_MoneyApp_BE.Models
         public decimal MonthlyTarget { get; set; }
         public int ColorId { get; set; }
         public int IconId { get; set; }
-        public bool IsDefault { get; set; } = false; //TODO: Create default category when register
         public int SortingOrder { get; set; }
 
         //

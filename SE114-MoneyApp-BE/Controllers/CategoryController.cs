@@ -25,7 +25,6 @@ namespace SE114_MoneyApp_BE.Controllers
             GroupName = c.CategoryGroup!.GroupName,
             ColorId = c.ColorId,
             IconId = c.IconId,
-            IsDefault = c.IsDefault,
             SortingOrder = c.SortingOrder,
             CreatedAt = c.CreatedAt,
             LastUpdatedAt = c.LastUpdatedAt
@@ -153,7 +152,7 @@ namespace SE114_MoneyApp_BE.Controllers
                 return BadRequest(new { Message = "Nhóm này không thuộc loại Thu/Chi đang tạo." });
             }
 
-            int nextOrder = await NormalizeAndGetNextSortingOrderAsync(userId, type);
+            int nextOrder = await NormalizeAndGetNextSortingOrderAsync(userId, request.GroupId);
 
             var category = new Category
             {
@@ -219,13 +218,6 @@ namespace SE114_MoneyApp_BE.Controllers
             if (category == null)
             {
                 return NotFound(new { Message = "Không tìm thấy danh mục hoặc sai loại danh mục." });
-            }
-            if (category.IsDefault)
-            {
-                return BadRequest(new
-                {
-                    Message = "Không được sửa hạng mục mặc định"
-                });
             }
 
             if (category.GroupId != request.GroupId)
@@ -371,11 +363,6 @@ namespace SE114_MoneyApp_BE.Controllers
             if (categoryToDelete == null)
             {
                 return NotFound(new { Message = "Không tìm thấy danh mục hoặc bạn không có quyền xóa." });
-            }
-
-            if (categoryToDelete.IsDefault)
-            {
-                return BadRequest(new { Message = "Không được phép xóa danh mục mặc định của hệ thống." });
             }
 
             // 2. XỬ LÝ CÁC GIAO DỊCH LIÊN QUAN THEO TỪNG CHẾ ĐỘ

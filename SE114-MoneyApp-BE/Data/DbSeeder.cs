@@ -183,28 +183,50 @@ namespace SE114_MoneyApp_BE.Data
             context.Accounts.AddRange(u3Cash, u3VietinBank);
 
             // ================================================================
-            // 3. TẠO DANH MỤC (USER 1 – nhiều category)
+            // 3. TẠO NHÓM HẠNG MỤC VÀ DANH MỤC (USER 1 – nhiều category)
             // ================================================================
 
+            // --- TẠO NHÓM HẠNG MỤC (GROUP) CHO USER 1 ---
+            // Nhóm Chi tiêu
+            var ug1Living = new CategoryGroup { User = user1, GroupName = "Sinh hoạt", Type = CategoryType.Expense, SortingOrder = 0 };
+            var ug1Personal = new CategoryGroup { User = user1, GroupName = "Cá nhân", Type = CategoryType.Expense, SortingOrder = 1 };
+            var ug1EduEnt = new CategoryGroup { User = user1, GroupName = "Phát triển & Giải trí", Type = CategoryType.Expense, SortingOrder = 2 };
+            var ug1ExpOther = new CategoryGroup { User = user1, GroupName = "Khác", Type = CategoryType.Expense, SortingOrder = 3 };
+
+            // Nhóm Thu nhập
+            var ug1IncomeMain = new CategoryGroup { User = user1, GroupName = "Thu nhập chính", Type = CategoryType.Income, SortingOrder = 0 };
+            var ug1Invest = new CategoryGroup { User = user1, GroupName = "Đầu tư", Type = CategoryType.Income, SortingOrder = 1 };
+            var ug1IncOther = new CategoryGroup { User = user1, GroupName = "Khác", Type = CategoryType.Income, SortingOrder = 2 };
+
+            context.CategoryGroups.AddRange(ug1Living, ug1Personal, ug1EduEnt, ug1ExpOther, ug1IncomeMain, ug1Invest, ug1IncOther);
+
+
+            // --- TẠO DANH MỤC (CATEGORY) CHO USER 1 ---
             // --- Chi tiêu ---
-            var c1Food = new Category { User = user1, CategoryName = "Ăn uống", Type = CategoryType.Expense, ColorId = 1, IconId = 1 };
-            var c1Transport = new Category { User = user1, CategoryName = "Đi lại", Type = CategoryType.Expense, ColorId = 2, IconId = 2 };
-            var c1Shopping = new Category { User = user1, CategoryName = "Mua sắm", Type = CategoryType.Expense, ColorId = 3, IconId = 3 };
-            var c1Health = new Category { User = user1, CategoryName = "Sức khỏe", Type = CategoryType.Expense, ColorId = 4, IconId = 4 };
-            var c1Education = new Category { User = user1, CategoryName = "Học tập", Type = CategoryType.Expense, ColorId = 5, IconId = 5 };
-            var c1Entertainment = new Category { User = user1, CategoryName = "Giải trí", Type = CategoryType.Expense, ColorId = 6, IconId = 6 };
-            var c1Rent = new Category { User = user1, CategoryName = "Thuê nhà", Type = CategoryType.Expense, ColorId = 7, IconId = 7 };
-            var c1Utilities = new Category { User = user1, CategoryName = "Điện nước", Type = CategoryType.Expense, ColorId = 8, IconId = 8 };
-            var c1Personal = new Category { User = user1, CategoryName = "Cá nhân", Type = CategoryType.Expense, ColorId = 9, IconId = 9 };
-            var c1Gift = new Category { User = user1, CategoryName = "Quà tặng", Type = CategoryType.Expense, ColorId = 10, IconId = 10 };
-            var c1DefaultExpense = new Category { User = user1, CategoryName = "Khác", Type = CategoryType.Expense, ColorId = 11, IconId = 11, IsDefault = true };
+            var c1Food = new Category { User = user1, CategoryGroup = ug1Living, CategoryName = "Ăn uống", ColorId = 1, IconId = 1, SortingOrder = 0 };
+            var c1Rent = new Category { User = user1, CategoryGroup = ug1Living, CategoryName = "Thuê nhà", ColorId = 7, IconId = 7, SortingOrder = 1 };
+            var c1Utilities = new Category { User = user1, CategoryGroup = ug1Living, CategoryName = "Điện nước", ColorId = 8, IconId = 8, SortingOrder = 2 };
+            var c1Transport = new Category { User = user1, CategoryGroup = ug1Living, CategoryName = "Đi lại", ColorId = 2, IconId = 2, SortingOrder = 3 };
+
+            var c1Shopping = new Category { User = user1, CategoryGroup = ug1Personal, CategoryName = "Mua sắm", ColorId = 3, IconId = 3, SortingOrder = 0 };
+            var c1Health = new Category { User = user1, CategoryGroup = ug1Personal, CategoryName = "Sức khỏe", ColorId = 4, IconId = 4, SortingOrder = 1 };
+            var c1Personal = new Category { User = user1, CategoryGroup = ug1Personal, CategoryName = "Cá nhân", ColorId = 9, IconId = 9, SortingOrder = 2 };
+            var c1Gift = new Category { User = user1, CategoryGroup = ug1Personal, CategoryName = "Quà tặng", ColorId = 10, IconId = 10, SortingOrder = 3 };
+
+            var c1Education = new Category { User = user1, CategoryGroup = ug1EduEnt, CategoryName = "Học tập", ColorId = 5, IconId = 5, SortingOrder = 0 };
+            var c1Entertainment = new Category { User = user1, CategoryGroup = ug1EduEnt, CategoryName = "Giải trí", ColorId = 6, IconId = 6, SortingOrder = 1 };
+
+            var c1DefaultExpense = new Category { User = user1, CategoryGroup = ug1ExpOther, CategoryName = "Khác", ColorId = 11, IconId = 11, SortingOrder = 0 };
+
             // --- Thu nhập ---
-            var c1Salary = new Category { User = user1, CategoryName = "Lương", Type = CategoryType.Income, ColorId = 11, IconId = 11 };
-            var c1Freelance = new Category { User = user1, CategoryName = "Freelance", Type = CategoryType.Income, ColorId = 12, IconId = 12 };
-            var c1Investment = new Category { User = user1, CategoryName = "Đầu tư", Type = CategoryType.Income, ColorId = 13, IconId = 13 };
-            var c1Bonus = new Category { User = user1, CategoryName = "Thưởng", Type = CategoryType.Income, ColorId = 14, IconId = 14 };
-            var c1Other = new Category { User = user1, CategoryName = "Khác", Type = CategoryType.Income, ColorId = 15, IconId = 15 };
-            var c1DefaultIncome = new Category { User = user1, CategoryName = "Khác", Type = CategoryType.Income, ColorId = 16, IconId = 16, IsDefault = true };
+            var c1Salary = new Category { User = user1, CategoryGroup = ug1IncomeMain, CategoryName = "Lương", ColorId = 11, IconId = 11, SortingOrder = 0 };
+            var c1Freelance = new Category { User = user1, CategoryGroup = ug1IncomeMain, CategoryName = "Freelance", ColorId = 12, IconId = 12, SortingOrder = 1 };
+            var c1Bonus = new Category { User = user1, CategoryGroup = ug1IncomeMain, CategoryName = "Thưởng", ColorId = 14, IconId = 14, SortingOrder = 2 };
+
+            var c1Investment = new Category { User = user1, CategoryGroup = ug1Invest, CategoryName = "Đầu tư", ColorId = 13, IconId = 13, SortingOrder = 0 };
+
+            var c1Other = new Category { User = user1, CategoryGroup = ug1IncOther, CategoryName = "Khác", ColorId = 15, IconId = 15, SortingOrder = 0 };
+            var c1DefaultIncome = new Category { User = user1, CategoryGroup = ug1IncOther, CategoryName = "Khác", ColorId = 16, IconId = 16, SortingOrder = 1 };
 
             context.Categories.AddRange(
                 c1Food, c1Transport, c1Shopping, c1Health, c1Education,
@@ -212,21 +234,42 @@ namespace SE114_MoneyApp_BE.Data
                 c1Salary, c1Freelance, c1Investment, c1Bonus, c1Other, c1DefaultExpense, c1DefaultIncome
             );
 
-            // Danh mục User 2
-            var c2Food = new Category { User = user2, CategoryName = "Ăn uống", Type = CategoryType.Expense, ColorId = 1, IconId = 1 };
-            var c2Shopping = new Category { User = user2, CategoryName = "Mua sắm", Type = CategoryType.Expense, ColorId = 2, IconId = 2 };
-            var c2Transport = new Category { User = user2, CategoryName = "Di chuyển", Type = CategoryType.Expense, ColorId = 3, IconId = 3 };
-            var c2Salary = new Category { User = user2, CategoryName = "Lương", Type = CategoryType.Income, ColorId = 4, IconId = 4 };
-            var c2SideJob = new Category { User = user2, CategoryName = "Việc phụ", Type = CategoryType.Income, ColorId = 5, IconId = 5 };
-            var c2DefaultExpense = new Category { User = user2, CategoryName = "Khác", Type = CategoryType.Expense, ColorId = 6, IconId = 6, IsDefault = true };
-            var c2DefaultIncome = new Category { User = user2, CategoryName = "Khác", Type = CategoryType.Income, ColorId = 7, IconId = 7, IsDefault = true };
+
+            // ================================================================
+            // USER 2
+            // ================================================================
+            var ug2Daily = new CategoryGroup { User = user2, GroupName = "Hàng ngày", Type = CategoryType.Expense, SortingOrder = 0 };
+            var ug2ExpOther = new CategoryGroup { User = user2, GroupName = "Khác", Type = CategoryType.Expense, SortingOrder = 1 };
+            var ug2Income = new CategoryGroup { User = user2, GroupName = "Thu nhập", Type = CategoryType.Income, SortingOrder = 0 };
+
+            context.CategoryGroups.AddRange(ug2Daily, ug2ExpOther, ug2Income);
+
+            var c2Food = new Category { User = user2, CategoryGroup = ug2Daily, CategoryName = "Ăn uống", ColorId = 1, IconId = 1, SortingOrder = 0 };
+            var c2Shopping = new Category { User = user2, CategoryGroup = ug2Daily, CategoryName = "Mua sắm", ColorId = 2, IconId = 2, SortingOrder = 1 };
+            var c2Transport = new Category { User = user2, CategoryGroup = ug2Daily, CategoryName = "Di chuyển", ColorId = 3, IconId = 3, SortingOrder = 2 };
+            var c2DefaultExpense = new Category { User = user2, CategoryGroup = ug2ExpOther, CategoryName = "Khác", ColorId = 6, IconId = 6, IsDefault = true, SortingOrder = 0 };
+
+            var c2Salary = new Category { User = user2, CategoryGroup = ug2Income, CategoryName = "Lương", ColorId = 4, IconId = 4, SortingOrder = 0 };
+            var c2SideJob = new Category { User = user2, CategoryGroup = ug2Income, CategoryName = "Việc phụ", ColorId = 5, IconId = 5, SortingOrder = 1 };
+            var c2DefaultIncome = new Category { User = user2, CategoryGroup = ug2Income, CategoryName = "Khác", ColorId = 7, IconId = 7, IsDefault = true, SortingOrder = 2 };
+
             context.Categories.AddRange(c2Food, c2Shopping, c2Transport, c2Salary, c2SideJob, c2DefaultExpense, c2DefaultIncome);
 
-            // Danh mục User 3
-            var c3Food = new Category { User = user3, CategoryName = "Ăn uống", Type = CategoryType.Expense, ColorId = 1, IconId = 1 };
-            var c3Salary = new Category { User = user3, CategoryName = "Lương", Type = CategoryType.Income, ColorId = 2, IconId = 2 };
-            var c3DefaultExpense = new Category { User = user3, CategoryName = "Khác", Type = CategoryType.Expense, ColorId = 3, IconId = 3, IsDefault = true };
-            var c3DefaultIncome = new Category { User = user3, CategoryName = "Khác", Type = CategoryType.Income, ColorId = 4, IconId = 4, IsDefault = true };
+
+            // ================================================================
+            // USER 3
+            // ================================================================
+            var ug3Expense = new CategoryGroup { User = user3, GroupName = "Chi tiêu", Type = CategoryType.Expense, SortingOrder = 0 };
+            var ug3Income = new CategoryGroup { User = user3, GroupName = "Thu nhập", Type = CategoryType.Income, SortingOrder = 0 };
+
+            context.CategoryGroups.AddRange(ug3Expense, ug3Income);
+
+            var c3Food = new Category { User = user3, CategoryGroup = ug3Expense, CategoryName = "Ăn uống", ColorId = 1, IconId = 1, SortingOrder = 0 };
+            var c3DefaultExpense = new Category { User = user3, CategoryGroup = ug3Expense, CategoryName = "Khác", ColorId = 3, IconId = 3, IsDefault = true, SortingOrder = 1 };
+
+            var c3Salary = new Category { User = user3, CategoryGroup = ug3Income, CategoryName = "Lương", ColorId = 2, IconId = 2, SortingOrder = 0 };
+            var c3DefaultIncome = new Category { User = user3, CategoryGroup = ug3Income, CategoryName = "Khác", ColorId = 4, IconId = 4, IsDefault = true, SortingOrder = 1 };
+
             context.Categories.AddRange(c3Food, c3Salary, c3DefaultExpense, c3DefaultIncome);
 
             // ================================================================
