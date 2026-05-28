@@ -9,7 +9,6 @@ namespace SE114_MoneyApp_BE.Models
         public Guid Id { get; set; } = Guid.NewGuid();
         public int UserId { get; set; }
         public string CategoryName { get; set; } = string.Empty;
-        public CategoryType Type { get; set; }
         public Guid GroupId { get; set; }
 
         [Column(TypeName = "decimal(18,2)")]

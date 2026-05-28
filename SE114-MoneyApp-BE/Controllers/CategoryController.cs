@@ -19,8 +19,10 @@ namespace SE114_MoneyApp_BE.Controllers
         {
             Id = c.Id,
             CategoryName = c.CategoryName,
-            Type = c.Type,
+            Type = c.CategoryGroup!.Type,
             MonthlyTarget = c.MonthlyTarget,
+            GroupId = c.GroupId,
+            GroupName = c.CategoryGroup!.GroupName,
             ColorId = c.ColorId,
             IconId = c.IconId,
             IsDefault = c.IsDefault,
@@ -39,8 +41,11 @@ namespace SE114_MoneyApp_BE.Controllers
             }
 
             var categories = await _context.Categories
-                .Where(c => c.Type == type && c.UserId == userId && c.IsActive)
-                .OrderBy(c => c.SortingOrder)
+                .Where(c => c.CategoryGroup!.Type == type 
+                    && c.IsActive && c.CategoryGroup!.IsActive
+                    && c.UserId == userId)
+                .OrderBy(c => c.CategoryGroup!.SortingOrder)
+                .ThenBy(c => c.SortingOrder)
                 .Select(MapToCategoryResponse)
                 .ToListAsync();
 
@@ -97,10 +102,36 @@ namespace SE114_MoneyApp_BE.Controllers
             }
             return Ok(category);
         }
+
+        [HttpGet("group/{groupId:guid}")]
+        public async Task<ActionResult<List<CategoryResponse>>> GetCategoriesInGroup(Guid groupId)
+        {
+            var (userId, success, message) = GetCurrentUserId();
+            if (!success) return Unauthorized(new { Message = message });
+
+            var group = await _context.CategoryGroups
+                .Where(g => g.Id == groupId
+                           && g.IsActive
+                           && g.UserId == userId)
+                .FirstOrDefaultAsync();
+            if (group == null)
+            {
+                return NotFound(new { Message = "Không tìm thấy nhóm" });
+            }
+
+            var categories = await _context.Categories
+                .Where(c => c.GroupId == groupId
+                           && c.IsActive
+                           && c.UserId == userId)
+                .OrderBy(c => c.SortingOrder)
+                .ToListAsync();
+
+            return Ok(categories);
+        }
         #endregion
 
         #region POST
-        private async Task<IActionResult> CreateCategory(CategoryRequest request, CategoryType type, string successMessage)
+        private async Task<ActionResult<CategoryResponse>> CreateCategory(CategoryRequest request, CategoryType type, string successMessage)
         {
             var (userId, success, message) = GetCurrentUserId();
             if (!success)
@@ -108,29 +139,39 @@ namespace SE114_MoneyApp_BE.Controllers
                 return Unauthorized(new { Message = message });
             }
 
+            var group = await _context.CategoryGroups
+                .Where(g => g.Id == request.GroupId
+                            && g.IsActive
+                            && g.UserId == userId)
+                .FirstOrDefaultAsync();
+            if (group == null)
+            {
+                return NotFound(new { Message = "Không tìm thấy Nhóm hạng mục." });
+            }
+            if (group.Type != type)
+            {
+                return BadRequest(new { Message = "Nhóm này không thuộc loại Thu/Chi đang tạo." });
+            }
+
             int nextOrder = await NormalizeAndGetNextSortingOrderAsync(userId, type);
 
             var category = new Category
             {
+                UserId = userId,
+                GroupId = request.GroupId,
                 CategoryName = request.CategoryName,
                 MonthlyTarget = request.MonthlyTarget,
                 ColorId = request.ColorId,
                 IconId = request.IconId,
-
-                UserId = userId,
-                Type = type,
                 SortingOrder = nextOrder
             };
 
             _context.Categories.Add(category);
             await _context.SaveChangesAsync();
 
-            return Ok(new
-            {
-                Message = successMessage,
-                Id = category.Id,
-                SortingOrder = category.SortingOrder
-            });
+            var response = MapToCategoryResponse.Compile().Invoke(category);
+
+            return Ok(response);
         }
 
         // POST: api/Category/expense
@@ -140,7 +181,7 @@ namespace SE114_MoneyApp_BE.Controllers
         /// <param name="request"></param>
         /// <returns></returns>
         [HttpPost("expense")]
-        public async Task<IActionResult> CreateExpenseCategory([FromBody] CategoryRequest request)
+        public async Task<ActionResult<CategoryResponse>> CreateExpenseCategory([FromBody] CategoryRequest request)
         {
             return await CreateCategory(request, CategoryType.Expense, "Tạo hạng mục chi tiêu thành công");
         }
@@ -152,7 +193,7 @@ namespace SE114_MoneyApp_BE.Controllers
         /// <param name="request"></param>
         /// <returns></returns>
         [HttpPost("income")]
-        public async Task<IActionResult> CreateIncomeCategory([FromBody] CategoryRequest request)
+        public async Task<ActionResult<CategoryResponse>> CreateIncomeCategory([FromBody] CategoryRequest request)
         {
             return await CreateCategory(request, CategoryType.Income, "Tạo hạng mục thu nhập thành công");
         }
@@ -168,7 +209,12 @@ namespace SE114_MoneyApp_BE.Controllers
             }
 
             var category = await _context.Categories
-                .FirstOrDefaultAsync(c => c.Id == id && c.UserId == userId && c.Type == type && c.IsActive);
+                .Include(c => c.CategoryGroup) // Cần không?
+                .Where(c => c.Id == id
+                            && c.UserId == userId
+                            && c.CategoryGroup!.Type == type
+                            && c.IsActive)
+                .FirstOrDefaultAsync();
 
             if (category == null)
             {
@@ -180,6 +226,25 @@ namespace SE114_MoneyApp_BE.Controllers
                 {
                     Message = "Không được sửa hạng mục mặc định"
                 });
+            }
+
+            if (category.GroupId != request.GroupId)
+            {
+                var newGroup = await _context.CategoryGroups
+                                    .FirstOrDefaultAsync(g => g.Id == request.GroupId 
+                                                            && g.UserId == userId 
+                                                            && g.IsActive 
+                                                            && g.Type == type);
+                if (newGroup == null)
+                {
+                    return BadRequest(new
+                    {
+                        Message = "Nhóm không hợp lệ"
+                    });
+                }
+
+                category.GroupId = request.GroupId;
+                category.SortingOrder = await NormalizeAndGetNextSortingOrderAsync(userId, request.GroupId);
             }
 
             category.CategoryName = request.CategoryName;
@@ -224,18 +289,20 @@ namespace SE114_MoneyApp_BE.Controllers
             var (userId, success, message) = GetCurrentUserId();
             if (!success) return Unauthorized(new { Message = message });
 
+            var targetCategory = await _context.Categories
+                .Include(c => c.CategoryGroup)
+                .FirstOrDefaultAsync(c => c.Id == id && c.UserId == userId && c.IsActive);
+
+            if (targetCategory == null || targetCategory.CategoryGroup!.Type != type)
+                return NotFound(new { Message = "Không tìm thấy danh mục hoặc sai loại." });
+
             int newOrder = request.NewOrder;
 
             var categories = await _context.Categories
-                .Where(c => c.UserId == userId && c.Type == type && c.IsActive)
+                .Where(c => c.UserId == userId && c.GroupId == targetCategory.GroupId && c.IsActive)
                 .OrderBy(c => c.SortingOrder)
                 .ThenBy(c => c.CategoryName)
                 .ToListAsync();
-
-            if (categories.Count == 0) return NotFound(new { Message = "Không có danh mục." });
-
-            var targetCategory = categories.FirstOrDefault(c => c.Id == id);
-            if (targetCategory == null) return NotFound(new { Message = "Không tìm thấy danh mục hoặc sai loại." });
 
             if (newOrder < 0) newOrder = 0;
             if (newOrder >= categories.Count) newOrder = categories.Count - 1;
@@ -249,7 +316,6 @@ namespace SE114_MoneyApp_BE.Controllers
             }
 
             await _context.SaveChangesAsync();
-
             return Ok(new { Message = "Cập nhật vị trí thành công" });
         }
 
@@ -327,9 +393,11 @@ namespace SE114_MoneyApp_BE.Controllers
                     }
 
                     var fallbackCategory = await _context.Categories
-                        .FirstOrDefaultAsync(c => c.Id == fallbackCategoryId.Value && c.UserId == userId && c.IsActive);
+                        .FirstOrDefaultAsync(c => c.Id == fallbackCategoryId.Value 
+                                            && c.UserId == userId 
+                                            && c.IsActive);
 
-                    if (fallbackCategory == null || fallbackCategory.Type != categoryToDelete.Type)
+                    if (fallbackCategory == null || fallbackCategory.CategoryGroup!.Type != categoryToDelete.CategoryGroup!.Type)
                     {
                         return BadRequest(new { Message = "Danh mục dự phòng không hợp lệ hoặc không cùng loại (Thu/Chi)." });
                     }
@@ -345,9 +413,9 @@ namespace SE114_MoneyApp_BE.Controllers
                 case "delete_all":
                     foreach (var t in relatedTransactions)
                     {
-                        if (categoryToDelete.Type == CategoryType.Expense)
-                            t.Account!.Balance += t.Amount; 
-                        else if (categoryToDelete.Type == CategoryType.Income)
+                        if (categoryToDelete.CategoryGroup!.Type == CategoryType.Expense)
+                            t.Account!.Balance += t.Amount;
+                        else
                             t.Account!.Balance -= t.Amount;
                     }
                     _context.Transactions.RemoveRange(relatedTransactions);
@@ -355,8 +423,6 @@ namespace SE114_MoneyApp_BE.Controllers
 
                 case "soft_delete":
                 default:
-                    // Kịch bản C: Chỉ xóa mềm danh mục (Ẩn đi, giao dịch cũ giữ nguyên)
-                    // Không cần làm gì với mảng relatedTransactions cả
                     break;
             }
             
@@ -365,22 +431,20 @@ namespace SE114_MoneyApp_BE.Controllers
             categoryToDelete.LastUpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
-            await NormalizeAndGetNextSortingOrderAsync(userId, categoryToDelete.Type);
-
+            await NormalizeAndGetNextSortingOrderAsync(userId, categoryToDelete.GroupId);
             return Ok(new { Message = "Xóa danh mục thành công" });
         }
         #endregion
 
-        private async Task<int> NormalizeAndGetNextSortingOrderAsync(int userId, CategoryType type)
+        private async Task<int> NormalizeAndGetNextSortingOrderAsync(int userId, Guid groupId)
         {
             var categories = await _context.Categories
-                .Where(c => c.UserId == userId && c.Type == type && c.IsActive)
+                .Where(c => c.UserId == userId && c.GroupId == groupId && c.IsActive)
                 .OrderBy(c => c.SortingOrder)
                 .ThenBy(c => c.CategoryName)
                 .ToListAsync();
 
             bool isChanged = false;
-
             for (int i = 0; i < categories.Count; i++)
             {
                 if (categories[i].SortingOrder != i)
@@ -390,11 +454,7 @@ namespace SE114_MoneyApp_BE.Controllers
                 }
             }
 
-            if (isChanged)
-            {
-                await _context.SaveChangesAsync();
-            }
-
+            if (isChanged) await _context.SaveChangesAsync();
             return categories.Count;
         }
 
