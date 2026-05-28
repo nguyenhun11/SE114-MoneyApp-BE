@@ -108,9 +108,7 @@ namespace SE114_MoneyApp_BE.Controllers
                 return Unauthorized(new { Message = message });
             }
 
-            var maxSortingOrder = await _context.Categories
-                .Where(c => c.UserId == userId && c.Type == type && c.IsActive)
-                .MaxAsync(c => (int?)c.SortingOrder) ?? 0;
+            int nextOrder = await NormalizeAndGetNextSortingOrderAsync(userId, type);
 
             var category = new Category
             {
@@ -121,7 +119,7 @@ namespace SE114_MoneyApp_BE.Controllers
 
                 UserId = userId,
                 Type = type,
-                SortingOrder = maxSortingOrder + 1
+                SortingOrder = nextOrder
             };
 
             _context.Categories.Add(category);
@@ -224,50 +222,31 @@ namespace SE114_MoneyApp_BE.Controllers
         private async Task<IActionResult> ReorderCategoryInternal(Guid id, ReorderCategoryRequest request, Category.CategoryType type)
         {
             var (userId, success, message) = GetCurrentUserId();
-            if (!success)
-            {
-                return Unauthorized(new { Message = message });
-            }
+            if (!success) return Unauthorized(new { Message = message });
 
-            var categoryToMove = await _context.Categories
-                .FirstOrDefaultAsync(c => c.Id == id && c.UserId == userId && c.Type == type && c.IsActive);
-
-            if (categoryToMove == null)
-            {
-                return NotFound(new { Message = "Không tìm thấy danh mục hoặc sai loại." });
-            }
-
-            int oldOrder = categoryToMove.SortingOrder;
             int newOrder = request.NewOrder;
 
-            if (oldOrder == newOrder)
-            {
-                return Ok(new { Message = "Vị trí không thay đổi" });
-            }
+            var categories = await _context.Categories
+                .Where(c => c.UserId == userId && c.Type == type && c.IsActive)
+                .OrderBy(c => c.SortingOrder)
+                .ThenBy(c => c.CategoryName)
+                .ToListAsync();
 
-            // Lọc ra tập hợp cùng loại để chuẩn bị dồn
-            var query = _context.Categories
-                .Where(c => c.UserId == userId && c.Type == type && c.IsActive);
+            if (categories.Count == 0) return NotFound(new { Message = "Không có danh mục." });
 
-            if (newOrder < oldOrder)
-            {
-                // Kéo lên trên
-                var itemsToShift = await query
-                    .Where(c => c.SortingOrder >= newOrder && c.SortingOrder < oldOrder)
-                    .ToListAsync();
-                foreach (var item in itemsToShift) item.SortingOrder += 1;
-            }
-            else
-            {
-                // Kéo xuống dưới
-                var itemsToShift = await query
-                    .Where(c => c.SortingOrder > oldOrder && c.SortingOrder <= newOrder)
-                    .ToListAsync();
-                foreach (var item in itemsToShift) item.SortingOrder -= 1;
-            }
+            var targetCategory = categories.FirstOrDefault(c => c.Id == id);
+            if (targetCategory == null) return NotFound(new { Message = "Không tìm thấy danh mục hoặc sai loại." });
 
-            categoryToMove.SortingOrder = newOrder;
-            categoryToMove.LastUpdatedAt = DateTime.UtcNow;
+            if (newOrder < 0) newOrder = 0;
+            if (newOrder >= categories.Count) newOrder = categories.Count - 1;
+
+            categories.Remove(targetCategory);
+            categories.Insert(newOrder, targetCategory);
+
+            for (int i = 0; i < categories.Count; i++)
+            {
+                categories[i].SortingOrder = i;
+            }
 
             await _context.SaveChangesAsync();
 
@@ -386,10 +365,38 @@ namespace SE114_MoneyApp_BE.Controllers
             categoryToDelete.LastUpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
+            await NormalizeAndGetNextSortingOrderAsync(userId, categoryToDelete.Type);
 
             return Ok(new { Message = "Xóa danh mục thành công" });
         }
         #endregion
+
+        private async Task<int> NormalizeAndGetNextSortingOrderAsync(int userId, Category.CategoryType type)
+        {
+            var categories = await _context.Categories
+                .Where(c => c.UserId == userId && c.Type == type && c.IsActive)
+                .OrderBy(c => c.SortingOrder)
+                .ThenBy(c => c.CategoryName)
+                .ToListAsync();
+
+            bool isChanged = false;
+
+            for (int i = 0; i < categories.Count; i++)
+            {
+                if (categories[i].SortingOrder != i)
+                {
+                    categories[i].SortingOrder = i;
+                    isChanged = true;
+                }
+            }
+
+            if (isChanged)
+            {
+                await _context.SaveChangesAsync();
+            }
+
+            return categories.Count;
+        }
 
     }
 }
