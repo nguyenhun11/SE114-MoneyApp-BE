@@ -1,7 +1,10 @@
-Đã deploy và public API, mong không bị gì =))) Chỉ cần lên link này là xem và gọi được hết   
-[http://nguyenhun11-001-site1.site4future.com/swagger/index.html](http://nguyenhun11-001-site1.site4future.com/swagger/index.html)
-
-
+# Thông tin deploy và database
+- Public API docs: [http://nguyenhun11-001-site1.site4future.com/swagger/index.html](http://nguyenhun11-001-site1.site4future.com/swagger/index.html)
+- Thông tin kết nối Database: dùng SSMS hoặc các trình kết nối Database với các thông tin sau
+  - **Server Name**: SQL1001.site4now.net
+  - **Database Name**: db_ac9d5a_moneyapp
+  - **Username**: db_ac9d5a_moneyapp_admin
+  - **Password**: ********
 
 # 💰 MoneyApp - Quản lý tài chính cá nhân (Back-end)
 
