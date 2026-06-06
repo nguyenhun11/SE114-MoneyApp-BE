@@ -28,6 +28,14 @@ jobs:
     - name: Publish code
       run: dotnet publish SE114-MoneyApp-BE/SE114-MoneyApp-BE.csproj -c Release -o ./publish_output
 
+    - name: Take app offline
+      run: |
+        echo "API is updating..." > app_offline.htm
+        # Cập nhật lại đường dẫn curl cho đích danh file
+        curl -T app_offline.htm ftp://${{ secrets.FTP_SERVER }}/se114-moneyapp/app_offline.htm --user "${{ secrets.FTP_USERNAME }}:${{ secrets.FTP_PASSWORD }}"
+        echo "Đã đưa app_offline.htm lên server. Bắt đầu đếm ngược 15 giây chờ IIS nhả file..."
+        sleep 15
+
     # 5. Dùng FTP đồng bộ thẳng file đã build lên thư mục SmarterASP
     - name: Deploy via FTP
       uses: SamKirkland/FTP-Deploy-Action@v4.3.4
@@ -37,7 +45,8 @@ jobs:
         password: ${{ secrets.FTP_PASSWORD }}
         local-dir: ./publish_output/
         server-dir: /se114-moneyapp/
+        
     - name: Bring app online
-      # Lệnh này gửi request yêu cầu FTP xóa file app_offline.htm đi
       run: |
         curl -Q "-DELE /se114-moneyapp/app_offline.htm" ftp://${{ secrets.FTP_SERVER }}/ --user "${{ secrets.FTP_USERNAME }}:${{ secrets.FTP_PASSWORD }}"
+      continue-on-error: true
