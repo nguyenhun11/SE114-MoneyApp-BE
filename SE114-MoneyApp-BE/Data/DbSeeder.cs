@@ -20,7 +20,7 @@ namespace SE114_MoneyApp_BE.Data
             var user1 = new User
             {
                 Name = "Nguyễn Văn An",
-                Email = "an.nguyen@gmail.com",
+                Email = "dev@gmail.com",
                 PhoneNumber = "0901234567",
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword("123456"),
                 IsActive = true,
