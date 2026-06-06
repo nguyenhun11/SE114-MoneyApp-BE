@@ -14,7 +14,7 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    # 2. Cài đặt môi trường .NET (Giả sử ông xài .NET 8, nếu xài bản khác nhớ sửa)
+    # 2. Cài đặt môi trường .NET
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
@@ -36,5 +36,8 @@ jobs:
         username: ${{ secrets.FTP_USERNAME }}
         password: ${{ secrets.FTP_PASSWORD }}
         local-dir: ./publish_output/
-        # Thư mục chứa web trên SmarterASP (thường là /site1/ hoặc /<tên_miền>/)
         server-dir: /se114-moneyapp/
+    - name: Bring app online
+      # Lệnh này gửi request yêu cầu FTP xóa file app_offline.htm đi
+      run: |
+        curl -Q "-DELE /se114-moneyapp/app_offline.htm" ftp://${{ secrets.FTP_SERVER }}/ --user "${{ secrets.FTP_USERNAME }}:${{ secrets.FTP_PASSWORD }}"
