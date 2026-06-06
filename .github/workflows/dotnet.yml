@@ -26,7 +26,7 @@ jobs:
 
     # 4. Build và đóng gói (Publish) code ra thư mục publish_output
     - name: Publish code
-      run: dotnet publish -c Release -o ./publish_output
+      run: dotnet publish SE114-MoneyApp-BE/SE114-MoneyApp-BE.csproj -c Release -o ./publish_output
 
     # 5. Dùng FTP đồng bộ thẳng file đã build lên thư mục SmarterASP
     - name: Deploy via FTP
