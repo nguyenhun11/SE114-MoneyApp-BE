@@ -102,6 +102,11 @@ namespace SE114_MoneyApp_BE.Controllers
             return Ok(category);
         }
 
+        /// <summary>
+        /// Lấy hạng mục trong một nhóm
+        /// </summary>
+        /// <param name="groupId"></param>
+        /// <returns></returns>
         [HttpGet("group/{groupId:guid}")]
         public async Task<ActionResult<List<CategoryResponse>>> GetCategoriesInGroup(Guid groupId)
         {
