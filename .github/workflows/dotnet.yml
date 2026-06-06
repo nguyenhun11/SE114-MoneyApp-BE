@@ -1,28 +1,40 @@
-# This workflow will build a .NET project
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-net
-
-name: .NET
+name: Deploy MoneyApp Backend to SmarterASP
 
 on:
   push:
-    branches: [ "dev" ]
-  pull_request:
-    branches: [ "dev" ]
+    branches:
+      - dev
 
 jobs:
-  build:
-
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+    # 1. Tải code từ GitHub về máy ảo
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    # 2. Cài đặt môi trường .NET (Giả sử ông xài .NET 8, nếu xài bản khác nhớ sửa)
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: 8.0.x
+        dotnet-version: '8.0.x' 
+
+    # 3. Khôi phục các thư viện
     - name: Restore dependencies
       run: dotnet restore
-    - name: Build
-      run: dotnet build --no-restore
-    - name: Test
-      run: dotnet test --no-build --verbosity normal
+
+    # 4. Build và đóng gói (Publish) code ra thư mục publish_output
+    - name: Publish code
+      run: dotnet publish -c Release -o ./publish_output
+
+    # 5. Dùng FTP đồng bộ thẳng file đã build lên thư mục SmarterASP
+    - name: Deploy via FTP
+      uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+      with:
+        server: ${{ secrets.FTP_SERVER }}
+        username: ${{ secrets.FTP_USERNAME }}
+        password: ${{ secrets.FTP_PASSWORD }}
+        local-dir: ./publish_output/
+        # Thư mục chứa web trên SmarterASP (thường là /site1/ hoặc /<tên_miền>/)
+        server-dir: /se114-moneyapp/
