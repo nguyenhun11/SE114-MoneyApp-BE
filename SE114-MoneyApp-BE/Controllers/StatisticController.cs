@@ -198,6 +198,7 @@ namespace SE114_MoneyApp_BE.Controllers
 
             var transactions = await _context.Transactions
                 .Include(t => t.Category)
+                .ThenInclude(c => c!.CategoryGroup)
                 .Where(t => t.Account!.UserId == userId
                          && t.TransactionDate >= utcStart
                          && t.TransactionDate <= utcEnd)

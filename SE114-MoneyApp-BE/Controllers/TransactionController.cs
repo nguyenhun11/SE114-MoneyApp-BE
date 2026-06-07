@@ -21,6 +21,7 @@ namespace SE114_MoneyApp_BE.Controllers
             AccountName = t.Account != null ? t.Account.AccountName : string.Empty,
             CategoryId = t.CategoryId,
             CategoryName = t.Category != null ? t.Category.CategoryName : string.Empty,
+            Type = t.Category != null && t.Category.CategoryGroup != null ? t.Category.CategoryGroup.Type : CategoryType.Expense,
             Amount = t.Amount,
             Date = t.TransactionDate,
             Note = t.Note,
