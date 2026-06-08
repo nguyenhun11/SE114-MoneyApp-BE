@@ -25,8 +25,10 @@ namespace SE114_MoneyApp_BE.Controllers
             Amount = t.Amount,
             Date = t.TransactionDate,
             Note = t.Note,
-            colorId = t.Category!.ColorId,
-            iconId = t.Category!.IconId,
+            categoryColorId = t.Category!.ColorId,
+            categoryIconId = t.Category!.IconId,
+            accountColorId = t.Account!.ColorId,
+            accountIconId = t.Account!.IconId,
             ImageUrls = t.ImageUrls,
             CreatedAt = t.CreatedAt,
             LastUpdatedAt = t.LastUpdatedAt
