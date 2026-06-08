@@ -9,13 +9,12 @@ namespace SE114_MoneyApp_BE.Models
         public Guid Id { get; set; } = Guid.NewGuid();
         public int UserId { get; set; }
         public string CategoryName { get; set; } = string.Empty;
-        public CategoryType Type { get; set; }
+        public Guid GroupId { get; set; }
 
         [Column(TypeName = "decimal(18,2)")]
         public decimal MonthlyTarget { get; set; }
         public int ColorId { get; set; }
         public int IconId { get; set; }
-        public bool IsDefault { get; set; } = false; //TODO: Create default category when register
         public int SortingOrder { get; set; }
 
         //
@@ -25,14 +24,17 @@ namespace SE114_MoneyApp_BE.Models
 
         //
         [ForeignKey("UserId")]
-        public virtual User? User { get; set; }
+        public User? User { get; set; }
+        [ForeignKey("GroupId")]
+        public CategoryGroup? CategoryGroup { get; set; }
+    }
 
-        //
-        public enum CategoryType
-        {
-            All = -1,
-            Expense = 0,
-            Income = 1
-        }
+
+    public enum CategoryType
+    {
+        All = -1,
+        Expense = 0,
+        Income = 1
     }
 }
+

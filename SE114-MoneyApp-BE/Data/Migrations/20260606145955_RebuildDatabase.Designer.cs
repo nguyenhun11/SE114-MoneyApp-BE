@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SE114_MoneyApp_BE.Data;
 
@@ -11,9 +12,11 @@ using SE114_MoneyApp_BE.Data;
 namespace SE114_MoneyApp_BE.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260606145955_RebuildDatabase")]
+    partial class RebuildDatabase
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -98,6 +101,9 @@ namespace SE114_MoneyApp_BE.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<Guid?>("CategoryGroupId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<string>("CategoryName")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -131,7 +137,7 @@ namespace SE114_MoneyApp_BE.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("GroupId");
+                    b.HasIndex("CategoryGroupId");
 
                     b.HasIndex("UserId");
 
@@ -358,9 +364,7 @@ namespace SE114_MoneyApp_BE.Migrations
                 {
                     b.HasOne("SE114_MoneyApp_BE.Models.CategoryGroup", "CategoryGroup")
                         .WithMany("Categories")
-                        .HasForeignKey("GroupId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("CategoryGroupId");
 
                     b.HasOne("SE114_MoneyApp_BE.Models.User", "User")
                         .WithMany()

@@ -20,8 +20,8 @@ namespace SE114_MoneyApp_BE.Models
 
         //
         [ForeignKey("AccountId")]
-        public virtual Account? Account { get; set; }
+        public Account? Account { get; set; }
         [ForeignKey("CategoryId")]
-        public virtual Category? Category { get; set; }
+        public Category? Category { get; set; }
     }
 }

@@ -2,16 +2,11 @@
 
 namespace SE114_MoneyApp_BE.DTOs.Category
 {
-    public class CategoryResponse
+    public class CategoryGroupResponse
     {
         public Guid Id { get; set; }
-        public string CategoryName { get; set; } = string.Empty;
+        public string GroupName { get; set; } = string.Empty;
         public CategoryType Type { get; set; }
-        public Guid GroupId { get; set; }
-        public String GroupName { get; set; } = string.Empty;
-        public decimal MonthlyTarget { get; set; }
-        public int ColorId { get; set; }
-        public int IconId { get; set; }
         public int SortingOrder { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime LastUpdatedAt { get; set; } = DateTime.UtcNow;

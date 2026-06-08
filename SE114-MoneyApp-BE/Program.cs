@@ -92,7 +92,7 @@ using (var scope = app.Services.CreateScope())
     {
         var context = services.GetRequiredService<AppDbContext>();
         // Tùy chọn: Tự động chạy Migration nếu chưa update DB
-        // await context.Database.MigrateAsync(); 
+        await context.Database.MigrateAsync(); 
 
         await DbSeeder.SeedDataAsync(context);
     }

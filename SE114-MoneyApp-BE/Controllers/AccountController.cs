@@ -1,10 +1,12 @@
 ﻿ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Conventions;
 using SE114_MoneyApp_BE.Controllers.Base;
 using SE114_MoneyApp_BE.Data;
 using SE114_MoneyApp_BE.DTOs.Account;
 using SE114_MoneyApp_BE.Models;
+using System.ComponentModel;
 using System.Linq.Expressions;
 using System.Security.Claims;
 
@@ -23,7 +25,10 @@ namespace SE114_MoneyApp_BE.Controllers
             IconId = account.IconId,
             Balance = account.Balance,
             Description = account.Description,
-            IncludeInTotalBalance = account.IncludeInTotalBalance   
+            IncludeInTotalBalance = account.IncludeInTotalBalance,
+            SortingOrder = account.SortingOrder,
+            CreatedAt = account.CreatedAt,
+            LastUpdatedAt = account.LastUpdatedAt
         };
 
 
@@ -98,6 +103,34 @@ namespace SE114_MoneyApp_BE.Controllers
             return Ok(totalBalance);
         }
 
+
+        private async Task<int> NormalizeAndGetNextSortingOrderAsync(int userId)
+        {
+            var accounts = await _context.Accounts
+                .Where(a => a.UserId == userId && a.IsActive)
+                .OrderBy(a => a.SortingOrder)
+                .ThenBy(a => a.AccountName)
+                .ToListAsync();
+
+            bool isChanged = false;
+
+            for (int i = 0; i < accounts.Count; i++)
+            {
+                if (accounts[i].SortingOrder != i)
+                {
+                    accounts[i].SortingOrder = i;
+                    isChanged = true;
+                }
+            }
+
+            if (isChanged)
+            {
+                await _context.SaveChangesAsync();
+            }
+
+            return accounts.Count;
+        }
+
         // POST: api/account
         /// <summary>
         /// Tạo tài khoản mới
@@ -105,13 +138,15 @@ namespace SE114_MoneyApp_BE.Controllers
         /// <param name="request"></param>
         /// <returns></returns>
         [HttpPost]
-        public async Task<IActionResult> CreateAccount([FromBody] AccountRequest request)
+        public async Task<ActionResult<AccountResponse>> CreateAccount([FromBody] AccountRequest request)
         {
             var (userId, success, message) = GetCurrentUserId();
             if (!success)
             {
                 return Unauthorized(new { Message = message });
             }
+
+            int nextOrder = await NormalizeAndGetNextSortingOrderAsync(userId);
 
             var newAccount = new Account
             {
@@ -121,13 +156,16 @@ namespace SE114_MoneyApp_BE.Controllers
                 IconId = request.IconId,
                 Balance = request.Balance,
                 Description = request.Description,
-                IncludeInTotalBalance = request.IncludeInTotalBalance
+                IncludeInTotalBalance = request.IncludeInTotalBalance,
+                SortingOrder = nextOrder
             };
 
             _context.Accounts.Add(newAccount);
             await _context.SaveChangesAsync();
 
-            return Ok(new { Message = "Tạo tài khoản thành công!", AccountId = newAccount.Id });
+            var response = MapToAccountResponse.Compile().Invoke(newAccount);
+
+            return Ok(response);
         }
 
         // PUT: api/Account/5
@@ -183,6 +221,47 @@ namespace SE114_MoneyApp_BE.Controllers
             {
                 Message = "Cập nhật tài khoản thành công"
             });
+        }
+
+        /// <summary>
+        /// Thay đổi thứ tự tài khoản
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        [HttpPut("reorder/{id:guid}")]
+        public async Task<IActionResult> ReorderAccount(Guid id, [FromBody] ReorderAccountRequest request)
+        {
+            var (userId, success, message) = GetCurrentUserId();
+            if (!success) return Unauthorized(new { Message = message });
+
+            int newOrder = request.NewOrder;
+
+            var accounts = await _context.Accounts
+                .Where(a => a.UserId == userId && a.IsActive)
+                .OrderBy(a => a.SortingOrder)
+                .ThenBy(a => a.AccountName)
+                .ToListAsync();
+
+            if (accounts.Count == 0) return NotFound(new { Message = "Không có tài khoản." });
+
+            var targetAccount = accounts.FirstOrDefault(a => a.Id == id);
+            if (targetAccount == null) return NotFound(new { Message = "Không tìm thấy tài khoản." });
+
+            if (newOrder < 0) newOrder = 0;
+            if (newOrder >= accounts.Count) newOrder = accounts.Count - 1;
+
+            accounts.Remove(targetAccount);
+            accounts.Insert(newOrder, targetAccount);
+
+            for (int i = 0; i < accounts.Count; i++)
+            {
+                accounts[i].SortingOrder = i;
+            }
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new { Message = "Cập nhật vị trí thành công!" });
         }
 
         // DELETE: api/Account/{id}
@@ -299,6 +378,7 @@ namespace SE114_MoneyApp_BE.Controllers
             accountToDelete.IncludeInTotalBalance = false;
 
             await _context.SaveChangesAsync();
+            await NormalizeAndGetNextSortingOrderAsync(userId);
 
             return Ok(new { Message = "Đã xóa tài khoản thành công" });
         }

@@ -21,6 +21,7 @@ namespace SE114_MoneyApp_BE.Controllers
             AccountName = t.Account != null ? t.Account.AccountName : string.Empty,
             CategoryId = t.CategoryId,
             CategoryName = t.Category != null ? t.Category.CategoryName : string.Empty,
+            Type = t.Category != null && t.Category.CategoryGroup != null ? t.Category.CategoryGroup.Type : CategoryType.Expense,
             Amount = t.Amount,
             Date = t.TransactionDate,
             Note = t.Note,
@@ -41,7 +42,7 @@ namespace SE114_MoneyApp_BE.Controllers
         [HttpGet]
         public async Task<ActionResult<List<TransactionResponse>>> GetTransactions( [FromQuery] DateTime? startDate,
             [FromQuery] DateTime? endDate,
-            [FromQuery] Category.CategoryType? categoryType,
+            [FromQuery] CategoryType? categoryType,
             [FromQuery] Guid? accountId,
             [FromQuery] Guid? categoryId)
         {
@@ -66,9 +67,9 @@ namespace SE114_MoneyApp_BE.Controllers
                 var endOfDay = endDate.Value.Date.AddDays(1).AddTicks(-1);
                 query = query.Where(t => t.TransactionDate <= endOfDay);
             }
-            if (categoryType.HasValue && categoryType.Value != Category.CategoryType.All)
+            if (categoryType.HasValue && categoryType.Value != CategoryType.All)
             {
-                query = query.Where(t => t.Category!.Type == categoryType.Value);
+                query = query.Where(t => t.Category!.CategoryGroup!.Type == categoryType.Value);
             }
             if (accountId.HasValue)
             {
@@ -151,12 +152,12 @@ namespace SE114_MoneyApp_BE.Controllers
                 ImageUrls = request.ImageUrls
             };
 
-            switch (category.Type)
+            switch (category.CategoryGroup!.Type)
             {
-                case Category.CategoryType.Expense:
+                case CategoryType.Expense:
                     account.Balance -= request.Amount;
                     break;
-                case Category.CategoryType.Income:
+                case CategoryType.Income:
                     account.Balance += request.Amount;
                     break;
                 default:
@@ -198,12 +199,12 @@ namespace SE114_MoneyApp_BE.Controllers
 
             if (oldAccount != null && oldCategory != null)
             {
-                switch (oldCategory.Type)
+                switch (oldCategory.CategoryGroup!.Type)
                 {
-                    case Category.CategoryType.Expense:
+                    case CategoryType.Expense:
                         oldAccount.Balance += transaction.Amount;
                         break;
-                    case Category.CategoryType.Income:
+                    case CategoryType.Income:
                         oldAccount.Balance -= transaction.Amount;
                         break;
                     default:
@@ -228,12 +229,12 @@ namespace SE114_MoneyApp_BE.Controllers
             transaction.Note = request.Note;
             transaction.ImageUrls = request.ImageUrls;
             transaction.LastUpdatedAt = DateTime.UtcNow;
-            switch (newCategory.Type)
+            switch (newCategory.CategoryGroup!.Type)
             {
-                case Category.CategoryType.Expense:
+                case CategoryType.Expense:
                     newAccount.Balance -= request.Amount;
                     break;
-                case Category.CategoryType.Income:
+                case CategoryType.Income:
                     newAccount.Balance += request.Amount;
                     break;
                 default:
@@ -267,12 +268,12 @@ namespace SE114_MoneyApp_BE.Controllers
                 return NotFound("Không tìm thấy giao dịch hoặc không có quyền truy cập");
             }
 
-            switch (transaction.Category!.Type)
+            switch (transaction.Category!.CategoryGroup!.Type)
             {
-                case Category.CategoryType.Expense:
+                case CategoryType.Expense:
                     transaction.Account!.Balance += transaction.Amount; // Hoàn tiền
                     break;
-                case Category.CategoryType.Income:
+                case CategoryType.Income:
                     transaction.Account!.Balance -= transaction.Amount;
                     break;
             }
