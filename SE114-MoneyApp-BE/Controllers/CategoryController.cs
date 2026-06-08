@@ -163,6 +163,7 @@ namespace SE114_MoneyApp_BE.Controllers
             {
                 UserId = userId,
                 GroupId = request.GroupId,
+                CategoryGroup = group,
                 CategoryName = request.CategoryName,
                 MonthlyTarget = request.MonthlyTarget,
                 ColorId = request.ColorId,
