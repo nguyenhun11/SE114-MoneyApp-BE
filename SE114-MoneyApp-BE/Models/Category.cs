@@ -25,7 +25,7 @@ namespace SE114_MoneyApp_BE.Models
         //
         [ForeignKey("UserId")]
         public User? User { get; set; }
-        [ForeignKey("CategoryGroupId")]
+        [ForeignKey("GroupId")]
         public CategoryGroup? CategoryGroup { get; set; }
     }
 
