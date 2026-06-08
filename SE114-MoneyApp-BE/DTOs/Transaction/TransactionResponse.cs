@@ -14,6 +14,8 @@ namespace SE114_MoneyApp_BE.DTOs.Transaction
         public decimal Amount { get; set; }
         public DateTime Date { get; set; }
         public string Note { get; set; } = string.Empty;
+        public int colorId { get; set; }
+        public int iconId { get; set; }
         public List<string> ImageUrls { get; set; } = new List<string>();
 
         //
