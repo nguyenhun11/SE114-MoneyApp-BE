@@ -95,6 +95,7 @@ using (var scope = app.Services.CreateScope())
         await context.Database.MigrateAsync(); 
 
         await DbSeeder.SeedDataAsync(context);
+        await DbSeeder.AppendMoreDataAsync(context);
     }
     catch (Exception ex)
     {

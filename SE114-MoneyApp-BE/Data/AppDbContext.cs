@@ -54,6 +54,26 @@ namespace SE114_MoneyApp_BE.Data
                 .WithMany()
                 .HasForeignKey(t => t.CategoryId)
                 .OnDelete(DeleteBehavior.NoAction); // CẮT ĐƯỜNG CASCADE CỦA CATEGORY
+
+            // --- Cấu hình cho CategoryGroup ---
+            modelBuilder.Entity<CategoryGroup>()
+                .HasOne(cg => cg.User)
+                .WithMany()
+                .HasForeignKey(cg => cg.UserId)
+                .OnDelete(DeleteBehavior.NoAction); // KHÔNG CASCADE từ User -> Group
+
+            // --- Cấu hình cho Category ---
+            modelBuilder.Entity<Category>()
+                .HasOne(c => c.User)
+                .WithMany()
+                .HasForeignKey(c => c.UserId)
+                .OnDelete(DeleteBehavior.NoAction); // KHÔNG CASCADE từ User -> Category
+
+            modelBuilder.Entity<Category>()
+                .HasOne(c => c.CategoryGroup)
+                .WithMany(g => g.Categories)
+                .HasForeignKey(c => c.CategoryGroupId)
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

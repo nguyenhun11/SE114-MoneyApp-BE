@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace SE114_MoneyApp_BE.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialBuild : Migration
+    public partial class NewDatabase : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -46,6 +46,7 @@ namespace SE114_MoneyApp_BE.Migrations
                     Balance = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
                     Description = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     IncludeInTotalBalance = table.Column<bool>(type: "bit", nullable: false),
+                    SortingOrder = table.Column<int>(type: "int", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     LastUpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     IsActive = table.Column<bool>(type: "bit", nullable: false)
@@ -62,17 +63,13 @@ namespace SE114_MoneyApp_BE.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Categories",
+                name: "CategoryGroups",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     UserId = table.Column<int>(type: "int", nullable: false),
-                    CategoryName = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    GroupName = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Type = table.Column<int>(type: "int", nullable: false),
-                    MonthlyTarget = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    ColorId = table.Column<int>(type: "int", nullable: false),
-                    IconId = table.Column<int>(type: "int", nullable: false),
-                    IsDefault = table.Column<bool>(type: "bit", nullable: false),
                     SortingOrder = table.Column<int>(type: "int", nullable: false),
                     IsActive = table.Column<bool>(type: "bit", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
@@ -80,13 +77,12 @@ namespace SE114_MoneyApp_BE.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Categories", x => x.Id);
+                    table.PrimaryKey("PK_CategoryGroups", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Categories_Users_UserId",
+                        name: "FK_CategoryGroups_Users_UserId",
                         column: x => x.UserId,
                         principalTable: "Users",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
@@ -159,6 +155,38 @@ namespace SE114_MoneyApp_BE.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Categories",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    UserId = table.Column<int>(type: "int", nullable: false),
+                    CategoryName = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    CategoryGroupId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    MonthlyTarget = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    ColorId = table.Column<int>(type: "int", nullable: false),
+                    IconId = table.Column<int>(type: "int", nullable: false),
+                    SortingOrder = table.Column<int>(type: "int", nullable: false),
+                    IsActive = table.Column<bool>(type: "bit", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    LastUpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Categories", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Categories_CategoryGroups_CategoryGroupId",
+                        column: x => x.CategoryGroupId,
+                        principalTable: "CategoryGroups",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_Categories_Users_UserId",
+                        column: x => x.UserId,
+                        principalTable: "Users",
+                        principalColumn: "Id");
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Transactions",
                 columns: table => new
                 {
@@ -199,8 +227,18 @@ namespace SE114_MoneyApp_BE.Migrations
                 column: "AccountId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Categories_CategoryGroupId",
+                table: "Categories",
+                column: "CategoryGroupId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Categories_UserId",
                 table: "Categories",
+                column: "UserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_CategoryGroups_UserId",
+                table: "CategoryGroups",
                 column: "UserId");
 
             migrationBuilder.CreateIndex(
@@ -262,6 +300,9 @@ namespace SE114_MoneyApp_BE.Migrations
 
             migrationBuilder.DropTable(
                 name: "Accounts");
+
+            migrationBuilder.DropTable(
+                name: "CategoryGroups");
 
             migrationBuilder.DropTable(
                 name: "Users");

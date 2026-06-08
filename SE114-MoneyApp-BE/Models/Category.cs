@@ -9,7 +9,7 @@ namespace SE114_MoneyApp_BE.Models
         public Guid Id { get; set; } = Guid.NewGuid();
         public int UserId { get; set; }
         public string CategoryName { get; set; } = string.Empty;
-        public Guid GroupId { get; set; }
+        public Guid CategoryGroupId { get; set; }
 
         [Column(TypeName = "decimal(18,2)")]
         public decimal MonthlyTarget { get; set; }
@@ -25,7 +25,7 @@ namespace SE114_MoneyApp_BE.Models
         //
         [ForeignKey("UserId")]
         public User? User { get; set; }
-        [ForeignKey("GroupId")]
+        [ForeignKey("CategoryGroupId")]
         public CategoryGroup? CategoryGroup { get; set; }
     }
 

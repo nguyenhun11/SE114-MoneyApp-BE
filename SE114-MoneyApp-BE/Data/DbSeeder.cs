@@ -542,5 +542,110 @@ namespace SE114_MoneyApp_BE.Data
         /// <summary>Tạo DateTime UTC từ năm/tháng/ngày</summary>
         private static DateTime D(int year, int month, int day)
             => new DateTime(year, month, day, 0, 0, 0, DateTimeKind.Utc);
+
+        public static async Task AppendMoreDataAsync(AppDbContext context)
+        {
+            // ================================================================
+            // 1. KIỂM TRA & TẠO USER MỚI (a@g)
+            // ================================================================
+
+            // Kiểm tra chống trùng lặp: Nếu đã có a@g thì thoát luôn, không tạo thêm bản sao
+            bool isUserExists = await context.Users.AnyAsync(u => u.Email == "a@g");
+            if (isUserExists) return;
+
+            var baseDate = new DateTime(2026, 4, 1, 0, 0, 0, DateTimeKind.Utc);
+
+            var testUser = new User
+            {
+                Name = "Tester A",
+                Email = "a@g",
+                PhoneNumber = "0988888888",
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword("123456"),
+                IsActive = true,
+                DailyStreak = 5,
+                LastActiveDate = DateTime.UtcNow,
+                CreatedAt = baseDate,
+                LastUpdatedAt = DateTime.UtcNow
+            };
+
+            context.Users.Add(testUser);
+            // BẮT BUỘC LƯU LẦN 1: Để Entity Framework cấp ID cho testUser
+            await context.SaveChangesAsync();
+
+            // ================================================================
+            // 2. TẠO TÀI KHOẢN (ACCOUNT)
+            // ================================================================
+            var accBank = new Account { User = testUser, AccountName = "Vietcombank", Balance = 35_000_000, ColorId = 3, IconId = 3, IncludeInTotalBalance = true, SortingOrder = 0 };
+            var accCash = new Account { User = testUser, AccountName = "Tiền mặt", Balance = 2_500_000, ColorId = 1, IconId = 1, IncludeInTotalBalance = true, SortingOrder = 1 };
+
+            context.Accounts.AddRange(accBank, accCash);
+            // BẮT BUỘC LƯU LẦN 2
+            await context.SaveChangesAsync();
+
+            // ================================================================
+            // 3. TẠO NHÓM (GROUP) & HẠNG MỤC (CATEGORY)
+            // ================================================================
+            var grpExpense = new CategoryGroup { User = testUser, GroupName = "Chi tiêu", Type = CategoryType.Expense, SortingOrder = 0 };
+            var grpIncome = new CategoryGroup { User = testUser, GroupName = "Thu nhập", Type = CategoryType.Income, SortingOrder = 1 };
+
+            context.CategoryGroups.AddRange(grpExpense, grpIncome);
+            // BẮT BUỘC LƯU LẦN 3: Để có ID Group gán cho Category
+            await context.SaveChangesAsync();
+
+            var catFood = new Category { User = testUser, CategoryGroup = grpExpense, CategoryName = "Ăn uống", ColorId = 1, IconId = 1, SortingOrder = 0 };
+            var catRent = new Category { User = testUser, CategoryGroup = grpExpense, CategoryName = "Thuê nhà", ColorId = 7, IconId = 7, SortingOrder = 1 };
+            var catShopping = new Category { User = testUser, CategoryGroup = grpExpense, CategoryName = "Mua sắm", ColorId = 3, IconId = 3, SortingOrder = 2 };
+
+            var catSalary = new Category { User = testUser, CategoryGroup = grpIncome, CategoryName = "Lương", ColorId = 11, IconId = 11, SortingOrder = 0 };
+            var catBonus = new Category { User = testUser, CategoryGroup = grpIncome, CategoryName = "Thưởng", ColorId = 14, IconId = 14, SortingOrder = 1 };
+
+            context.Categories.AddRange(catFood, catRent, catShopping, catSalary, catBonus);
+            // BẮT BUỘC LƯU LẦN 4: Khóa cứng các danh mục
+            await context.SaveChangesAsync();
+
+            // ================================================================
+            // 4. RẢI GIAO DỊCH (THÁNG 4, 5, VÀ 6/2026 CHO ĐẾN HÔM NAY 8/6)
+            // ================================================================
+            var transactions = new List<Transaction>();
+
+            // ---- THÁNG 4 / 2026 ----
+            transactions.AddRange(new[]
+            {
+        new Transaction { Account = accBank, Category = catSalary,   Amount = 20_000_000, TransactionDate = D(2026,4,5),  Note = "Lương tháng 4" },
+        new Transaction { Account = accBank, Category = catRent,     Amount = 5_000_000,  TransactionDate = D(2026,4,2),  Note = "Tiền nhà T4" },
+        new Transaction { Account = accCash, Category = catFood,     Amount = 150_000,    TransactionDate = D(2026,4,10), Note = "Cơm trưa" },
+        new Transaction { Account = accCash, Category = catFood,     Amount = 350_000,    TransactionDate = D(2026,4,15), Note = "Ăn lẩu cuối tuần" },
+        new Transaction { Account = accBank, Category = catShopping, Amount = 1_200_000,  TransactionDate = D(2026,4,20), Note = "Mua giày thể thao" },
+        new Transaction { Account = accCash, Category = catFood,     Amount = 80_000,     TransactionDate = D(2026,4,28)  /* Test UI không Note */ },
+    });
+
+            // ---- THÁNG 5 / 2026 ----
+            transactions.AddRange(new[]
+            {
+        new Transaction { Account = accBank, Category = catSalary,   Amount = 20_000_000, TransactionDate = D(2026,5,5),  Note = "Lương tháng 5" },
+        new Transaction { Account = accBank, Category = catBonus,    Amount = 3_000_000,  TransactionDate = D(2026,5,5),  Note = "Thưởng lễ 30/4" },
+        new Transaction { Account = accBank, Category = catRent,     Amount = 5_000_000,  TransactionDate = D(2026,5,2),  Note = "Tiền nhà T5" },
+        new Transaction { Account = accCash, Category = catFood,     Amount = 120_000,    TransactionDate = D(2026,5,8),  Note = "Bữa trưa" },
+        new Transaction { Account = accCash, Category = catFood,     Amount = 45_000,     TransactionDate = D(2026,5,14)  /* Test UI không Note */ },
+        new Transaction { Account = accBank, Category = catShopping, Amount = 2_500_000,  TransactionDate = D(2026,5,22), Note = "Mua tai nghe" },
+        new Transaction { Account = accCash, Category = catFood,     Amount = 600_000,    TransactionDate = D(2026,5,28), Note = "Đi ăn buffet" },
+    });
+
+            // ---- THÁNG 6 / 2026 (Từ mùng 1 đến mùng 8) ----
+            transactions.AddRange(new[]
+            {
+        new Transaction { Account = accBank, Category = catRent,     Amount = 5_000_000,  TransactionDate = D(2026,6,2),  Note = "Tiền nhà T6" },
+        new Transaction { Account = accCash, Category = catFood,     Amount = 55_000,     TransactionDate = D(2026,6,3),  Note = "Ăn sáng" },
+        new Transaction { Account = accBank, Category = catSalary,   Amount = 20_000_000, TransactionDate = D(2026,6,5),  Note = "Lương tháng 6" },
+        new Transaction { Account = accCash, Category = catFood,     Amount = 200_000,    TransactionDate = D(2026,6,6)   /* Test UI không Note */ },
+        new Transaction { Account = accBank, Category = catShopping, Amount = 800_000,    TransactionDate = D(2026,6,7),  Note = "Mua quà tặng" },
+        new Transaction { Account = accCash, Category = catFood,     Amount = 350_000,    TransactionDate = D(2026,6,8),  Note = "Cà phê hôm nay" },
+    });
+
+            context.Transactions.AddRange(transactions);
+
+            // BẮT BUỘC LƯU LẦN CUỐI
+            await context.SaveChangesAsync();
+        }
     }
 }

@@ -215,7 +215,7 @@ namespace SE114_MoneyApp_BE.Controllers
                 return NotFound(new { message = "Category group not found" });
             }
 
-            var categories = await _context.Categories.Where(c => c.GroupId == id && c.UserId == userId && c.IsActive).ToListAsync();
+            var categories = await _context.Categories.Where(c => c.CategoryGroupId == id && c.UserId == userId && c.IsActive).ToListAsync();
 
             if (mode == "move")
             {
@@ -237,7 +237,7 @@ namespace SE114_MoneyApp_BE.Controllers
 
                 foreach (var category in categories)
                 {
-                    category.GroupId = fallbackGroupId.Value;
+                    category.CategoryGroupId = fallbackGroupId.Value;
                     category.LastUpdatedAt = DateTime.UtcNow; // Nhớ update giờ
                 }
             }

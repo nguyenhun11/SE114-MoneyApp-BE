@@ -12,8 +12,8 @@ using SE114_MoneyApp_BE.Data;
 namespace SE114_MoneyApp_BE.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260528082827_CategoryGroup")]
-    partial class CategoryGroup
+    [Migration("20260608090410_NewDatabase")]
+    partial class NewDatabase
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -101,7 +101,7 @@ namespace SE114_MoneyApp_BE.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid?>("CategoryGroupId")
+                    b.Property<Guid>("CategoryGroupId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("CategoryName")
@@ -114,16 +114,10 @@ namespace SE114_MoneyApp_BE.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<Guid>("GroupId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<int>("IconId")
                         .HasColumnType("int");
 
                     b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("IsDefault")
                         .HasColumnType("bit");
 
                     b.Property<DateTime>("LastUpdatedAt")
@@ -133,9 +127,6 @@ namespace SE114_MoneyApp_BE.Migrations
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<int>("SortingOrder")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Type")
                         .HasColumnType("int");
 
                     b.Property<int>("UserId")
@@ -370,12 +361,14 @@ namespace SE114_MoneyApp_BE.Migrations
                 {
                     b.HasOne("SE114_MoneyApp_BE.Models.CategoryGroup", "CategoryGroup")
                         .WithMany("Categories")
-                        .HasForeignKey("CategoryGroupId");
+                        .HasForeignKey("CategoryGroupId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.HasOne("SE114_MoneyApp_BE.Models.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.Navigation("CategoryGroup");
@@ -388,7 +381,7 @@ namespace SE114_MoneyApp_BE.Migrations
                     b.HasOne("SE114_MoneyApp_BE.Models.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.Navigation("User");

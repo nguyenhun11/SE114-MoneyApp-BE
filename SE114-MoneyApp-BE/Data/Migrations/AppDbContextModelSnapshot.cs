@@ -98,6 +98,9 @@ namespace SE114_MoneyApp_BE.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<Guid>("CategoryGroupId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<string>("CategoryName")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -107,9 +110,6 @@ namespace SE114_MoneyApp_BE.Migrations
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
-
-                    b.Property<Guid>("GroupId")
-                        .HasColumnType("uniqueidentifier");
 
                     b.Property<int>("IconId")
                         .HasColumnType("int");
@@ -131,7 +131,7 @@ namespace SE114_MoneyApp_BE.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("GroupId");
+                    b.HasIndex("CategoryGroupId");
 
                     b.HasIndex("UserId");
 
@@ -358,14 +358,14 @@ namespace SE114_MoneyApp_BE.Migrations
                 {
                     b.HasOne("SE114_MoneyApp_BE.Models.CategoryGroup", "CategoryGroup")
                         .WithMany("Categories")
-                        .HasForeignKey("GroupId")
+                        .HasForeignKey("CategoryGroupId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("SE114_MoneyApp_BE.Models.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.Navigation("CategoryGroup");
@@ -378,7 +378,7 @@ namespace SE114_MoneyApp_BE.Migrations
                     b.HasOne("SE114_MoneyApp_BE.Models.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.Navigation("User");
