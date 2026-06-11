@@ -123,46 +123,42 @@ namespace SE114_MoneyApp_BE.Controllers
         /// <summary>
         /// Tạo giao dịch mới
         /// </summary>
-        /// <param name="request"></param>
-        /// <returns></returns>
         [HttpPost]
         public async Task<IActionResult> CreateTransaction([FromBody] TransactionRequest request)
         {
             var (userId, success, message) = GetCurrentUserId();
-            if (!success)
-            {
-                return Unauthorized(message);
-            }
+            if (!success) return Unauthorized(message);
 
-            // Validate account and category
             var account = await _context.Accounts.FirstOrDefaultAsync(a => a.Id == request.AccountId && a.UserId == userId);
-            if (account == null)
-            {
-                return BadRequest("Invalid account");
-            }
-            var category = await _context.Categories.FirstOrDefaultAsync(c => c.Id == request.CategoryId && c.UserId == userId);
-            if (category == null)
-            {
-                return BadRequest("Invalid category");
-            }
+            if (account == null) return BadRequest("Invalid account");
+
+            var category = await _context.Categories
+                .Include(c => c.CategoryGroup)
+                .FirstOrDefaultAsync(c => c.Id == request.CategoryId && c.UserId == userId);
+            if (category == null) return BadRequest("Invalid category");
 
             var transaction = new Transaction
             {
                 AccountId = request.AccountId,
                 CategoryId = request.CategoryId,
-                Amount = request.Amount,
                 TransactionDate = request.Date,
                 Note = request.Note,
-                ImageUrls = request.ImageUrls
+                ImageUrls = request.ImageUrls,
+                Account = account,
+                Category = category
             };
+
+            var absAmount = Math.Abs(request.Amount);
 
             switch (category.CategoryGroup!.Type)
             {
                 case CategoryType.Expense:
-                    account.Balance -= request.Amount;
+                    account.Balance -= absAmount;
+                    transaction.Amount = -absAmount;
                     break;
                 case CategoryType.Income:
-                    account.Balance += request.Amount;
+                    account.Balance += absAmount;
+                    transaction.Amount = absAmount;
                     break;
                 default:
                     return BadRequest("Invalid category type");
@@ -171,61 +167,51 @@ namespace SE114_MoneyApp_BE.Controllers
             _context.Transactions.Add(transaction);
             await _context.SaveChangesAsync();
 
-            return Ok(new { transaction.Id });
+            var response = MapToTransactionResponse.Compile().Invoke(transaction);
+            return Ok(response);
         }
 
         /// <summary>
         /// Cập nhật giao dịch
         /// </summary>
-        /// <param name="id"></param>
-        /// <param name="request"></param>
-        /// <returns></returns>
         [HttpPut("{id:guid}")]
         public async Task<IActionResult> UpdateTransaction(Guid id, [FromBody] TransactionRequest request)
         {
             var (userId, success, message) = GetCurrentUserId();
-            if (!success)
-            {
-                return Unauthorized(message);
-            }
+            if (!success) return Unauthorized(message);
 
             var transaction = await _context.Transactions
                 .Where(t => t.Id == id && t.Account!.UserId == userId)
                 .FirstOrDefaultAsync();
-            if (transaction == null)
-            {
-                return NotFound("Không tìm thấy giao dịch hoặc không có quyền truy cập");
-            }
+            if (transaction == null) return NotFound("Không tìm thấy giao dịch");
 
-            // Hoàn tác giao dịch cũ
             var oldAccount = await _context.Accounts.FindAsync(transaction.AccountId);
-            var oldCategory = await _context.Categories.FindAsync(transaction.CategoryId);
+            var oldCategory = await _context.Categories
+                .Include(c => c.CategoryGroup)
+                .FirstOrDefaultAsync(c => c.Id == transaction.CategoryId);
 
             if (oldAccount != null && oldCategory != null)
             {
+                var oldAbsAmount = Math.Abs(transaction.Amount);
                 switch (oldCategory.CategoryGroup!.Type)
                 {
                     case CategoryType.Expense:
-                        oldAccount.Balance += transaction.Amount;
+                        oldAccount.Balance += oldAbsAmount; // Hoàn lại tiền chi
                         break;
                     case CategoryType.Income:
-                        oldAccount.Balance -= transaction.Amount;
+                        oldAccount.Balance -= oldAbsAmount; // Trừ đi tiền thu
                         break;
-                    default:
-                        return BadRequest("Invalid category type");
                 }
             }
 
+            // Áp dụng giao dịch mới
             var newAccount = await _context.Accounts.FirstOrDefaultAsync(a => a.Id == request.AccountId && a.UserId == userId);
-            if (newAccount == null)
-            {
-                return BadRequest("Invalid account");
-            }
-            var newCategory = await _context.Categories.FirstOrDefaultAsync(c => c.Id == request.CategoryId && c.UserId == userId);
-            if (newCategory == null)
-            {
-                return BadRequest("Invalid category");
-            }
+            if (newAccount == null) return BadRequest("Invalid account");
+
+            var newCategory = await _context.Categories
+                .Include(c => c.CategoryGroup) // FIX: Include CategoryGroup
+                .FirstOrDefaultAsync(c => c.Id == request.CategoryId && c.UserId == userId);
+            if (newCategory == null) return BadRequest("Invalid category");
 
             transaction.AccountId = request.AccountId;
             transaction.CategoryId = request.CategoryId;
@@ -233,20 +219,27 @@ namespace SE114_MoneyApp_BE.Controllers
             transaction.Note = request.Note;
             transaction.ImageUrls = request.ImageUrls;
             transaction.LastUpdatedAt = DateTime.UtcNow;
+            transaction.Account = newAccount;
+            transaction.Category = newCategory;
+
+            var newAbsAmount = Math.Abs(request.Amount);
             switch (newCategory.CategoryGroup!.Type)
             {
                 case CategoryType.Expense:
-                    newAccount.Balance -= request.Amount;
+                    newAccount.Balance -= newAbsAmount;
+                    transaction.Amount = -newAbsAmount;
                     break;
                 case CategoryType.Income:
-                    newAccount.Balance += request.Amount;
+                    newAccount.Balance += newAbsAmount;
+                    transaction.Amount = newAbsAmount;
                     break;
-                default:
-                    return BadRequest("Invalid category type");
             }
 
             await _context.SaveChangesAsync();
-            return Ok(new { Message = "Cập nhật thành công" });
+
+            // Trả về đúng object để update UI trên Android
+            var response = MapToTransactionResponse.Compile().Invoke(transaction);
+            return Ok(response);
         }
 
         /// <summary>
