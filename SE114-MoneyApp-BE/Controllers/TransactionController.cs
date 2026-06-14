@@ -149,16 +149,15 @@ namespace SE114_MoneyApp_BE.Controllers
             };
 
             var absAmount = Math.Abs(request.Amount);
+            transaction.Amount = absAmount;
 
             switch (category.CategoryGroup!.Type)
             {
                 case CategoryType.Expense:
                     account.Balance -= absAmount;
-                    transaction.Amount = -absAmount;
                     break;
                 case CategoryType.Income:
                     account.Balance += absAmount;
-                    transaction.Amount = absAmount;
                     break;
                 default:
                     return BadRequest("Invalid category type");
@@ -223,15 +222,14 @@ namespace SE114_MoneyApp_BE.Controllers
             transaction.Category = newCategory;
 
             var newAbsAmount = Math.Abs(request.Amount);
+            transaction.Amount = newAbsAmount;
             switch (newCategory.CategoryGroup!.Type)
             {
                 case CategoryType.Expense:
                     newAccount.Balance -= newAbsAmount;
-                    transaction.Amount = -newAbsAmount;
                     break;
                 case CategoryType.Income:
                     newAccount.Balance += newAbsAmount;
-                    transaction.Amount = newAbsAmount;
                     break;
             }
 
