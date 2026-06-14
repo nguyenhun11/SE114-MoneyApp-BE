@@ -27,8 +27,8 @@ namespace SE114_MoneyApp_BE.Controllers
             Description = account.Description,
             IncludeInTotalBalance = account.IncludeInTotalBalance,
             SortingOrder = account.SortingOrder,
-            CreatedAt = account.CreatedAt,
-            LastUpdatedAt = account.LastUpdatedAt
+            CreatedAt = DateTime.SpecifyKind(account.CreatedAt, DateTimeKind.Utc),
+            LastUpdatedAt = DateTime.SpecifyKind(account.LastUpdatedAt, DateTimeKind.Utc)
         };
 
 

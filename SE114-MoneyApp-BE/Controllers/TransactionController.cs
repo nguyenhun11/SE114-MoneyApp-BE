@@ -23,38 +23,26 @@ namespace SE114_MoneyApp_BE.Controllers
             CategoryName = t.Category != null ? t.Category.CategoryName : string.Empty,
             Type = t.Category != null && t.Category.CategoryGroup != null ? t.Category.CategoryGroup.Type : CategoryType.Expense,
             Amount = t.Amount,
-            Date = t.TransactionDate,
+            Date = DateTime.SpecifyKind(t.TransactionDate, DateTimeKind.Utc),
             Note = t.Note,
             categoryColorId = t.Category!.ColorId,
             categoryIconId = t.Category!.IconId,
             accountColorId = t.Account!.ColorId,
             accountIconId = t.Account!.IconId,
             ImageUrls = t.ImageUrls,
-            CreatedAt = t.CreatedAt,
-            LastUpdatedAt = t.LastUpdatedAt
+            CreatedAt = DateTime.SpecifyKind(t.CreatedAt, DateTimeKind.Utc),
+            LastUpdatedAt = DateTime.SpecifyKind(t.LastUpdatedAt, DateTimeKind.Utc)
         };
 
-        /// <summary>
-        /// Lấy danh sách giao dịch của người dùng hiện tại, có thể lọc theo ngày tháng, tài khoản và danh mục
-        /// </summary>
-        /// <param name="startDate"></param>
-        /// <param name="endDate"></param>
-        /// <param name="categoryType"></param>
-        /// <param name="accountId"></param>
-        /// <param name="categoryId"></param>
-        /// <returns></returns>
         [HttpGet]
-        public async Task<ActionResult<List<TransactionResponse>>> GetTransactions( [FromQuery] DateTime? startDate,
+        public async Task<ActionResult<List<TransactionResponse>>> GetTransactions([FromQuery] DateTime? startDate,
             [FromQuery] DateTime? endDate,
             [FromQuery] CategoryType? categoryType,
             [FromQuery] Guid? accountId,
             [FromQuery] Guid? categoryId)
         {
             var (userId, success, message) = GetCurrentUserId();
-            if (!success)
-            {
-                return Unauthorized(message);
-            }
+            if (!success) return Unauthorized(message);
 
             var query = _context.Transactions
                 .Include(t => t.Account)
@@ -64,11 +52,11 @@ namespace SE114_MoneyApp_BE.Controllers
 
             if (startDate.HasValue)
             {
-                query = query.Where(t => t.TransactionDate >= startDate.Value.Date);
+                query = query.Where(t => t.TransactionDate >= startDate.Value);
             }
             if (endDate.HasValue)
             {
-                var endOfDay = endDate.Value.Date.AddDays(1).AddTicks(-1);
+                var endOfDay = endDate.Value.AddDays(1).AddTicks(-1);
                 query = query.Where(t => t.TransactionDate <= endOfDay);
             }
             if (categoryType.HasValue && categoryType.Value != CategoryType.All)
@@ -92,37 +80,23 @@ namespace SE114_MoneyApp_BE.Controllers
             return Ok(transactions);
         }
 
-        /// <summary>
-        /// Lấy chi tiết 1 giao dịch
-        /// </summary>
-        /// <param name="id"></param>
-        /// <returns></returns>
         [HttpGet("{id}")]
         public async Task<ActionResult<TransactionResponse>> GetTransactionById(Guid id)
         {
             var (userId, success, message) = GetCurrentUserId();
-            if (!success)
-            {
-                return Unauthorized(message);
-            }
+            if (!success) return Unauthorized(message);
 
             var transaciton = await _context.Transactions
                 .Include(t => t.Account)
                 .Include(t => t.Category)
-                .Where(t => t.Id == id)
+                .Where(t => t.Id == id && t.Account!.UserId == userId)
                 .Select(MapToTransactionResponse)
                 .FirstOrDefaultAsync();
 
-            if (transaciton == null)
-            {
-                return NotFound("Transaction not found");
-            }
+            if (transaciton == null) return NotFound("Transaction not found");
             return Ok(transaciton);
         }
 
-        /// <summary>
-        /// Tạo giao dịch mới
-        /// </summary>
         [HttpPost]
         public async Task<IActionResult> CreateTransaction([FromBody] TransactionRequest request)
         {
@@ -137,19 +111,24 @@ namespace SE114_MoneyApp_BE.Controllers
                 .FirstOrDefaultAsync(c => c.Id == request.CategoryId && c.UserId == userId);
             if (category == null) return BadRequest("Invalid category");
 
+            var absAmount = Math.Abs(request.Amount);
+
             var transaction = new Transaction
             {
                 AccountId = request.AccountId,
                 CategoryId = request.CategoryId,
-                TransactionDate = request.Date,
+
+                TransactionDate = DateTime.SpecifyKind(request.Date.Date, DateTimeKind.Utc),
+
                 Note = request.Note,
                 ImageUrls = request.ImageUrls,
                 Account = account,
-                Category = category
-            };
+                Category = category,
+                Amount = absAmount,
 
-            var absAmount = Math.Abs(request.Amount);
-            transaction.Amount = absAmount;
+                CreatedAt = DateTime.UtcNow,
+                LastUpdatedAt = DateTime.UtcNow
+            };
 
             switch (category.CategoryGroup!.Type)
             {
@@ -170,9 +149,6 @@ namespace SE114_MoneyApp_BE.Controllers
             return Ok(response);
         }
 
-        /// <summary>
-        /// Cập nhật giao dịch
-        /// </summary>
         [HttpPut("{id:guid}")]
         public async Task<IActionResult> UpdateTransaction(Guid id, [FromBody] TransactionRequest request)
         {
@@ -195,34 +171,36 @@ namespace SE114_MoneyApp_BE.Controllers
                 switch (oldCategory.CategoryGroup!.Type)
                 {
                     case CategoryType.Expense:
-                        oldAccount.Balance += oldAbsAmount; // Hoàn lại tiền chi
+                        oldAccount.Balance += oldAbsAmount;
                         break;
                     case CategoryType.Income:
-                        oldAccount.Balance -= oldAbsAmount; // Trừ đi tiền thu
+                        oldAccount.Balance -= oldAbsAmount;
                         break;
                 }
             }
 
-            // Áp dụng giao dịch mới
             var newAccount = await _context.Accounts.FirstOrDefaultAsync(a => a.Id == request.AccountId && a.UserId == userId);
             if (newAccount == null) return BadRequest("Invalid account");
 
             var newCategory = await _context.Categories
-                .Include(c => c.CategoryGroup) // FIX: Include CategoryGroup
+                .Include(c => c.CategoryGroup)
                 .FirstOrDefaultAsync(c => c.Id == request.CategoryId && c.UserId == userId);
             if (newCategory == null) return BadRequest("Invalid category");
 
+            var newAbsAmount = Math.Abs(request.Amount);
+
             transaction.AccountId = request.AccountId;
             transaction.CategoryId = request.CategoryId;
-            transaction.TransactionDate = request.Date;
+
+            transaction.TransactionDate = DateTime.SpecifyKind(request.Date.Date, DateTimeKind.Utc);
+
             transaction.Note = request.Note;
             transaction.ImageUrls = request.ImageUrls;
             transaction.LastUpdatedAt = DateTime.UtcNow;
             transaction.Account = newAccount;
             transaction.Category = newCategory;
-
-            var newAbsAmount = Math.Abs(request.Amount);
             transaction.Amount = newAbsAmount;
+
             switch (newCategory.CategoryGroup!.Type)
             {
                 case CategoryType.Expense:
@@ -235,38 +213,27 @@ namespace SE114_MoneyApp_BE.Controllers
 
             await _context.SaveChangesAsync();
 
-            // Trả về đúng object để update UI trên Android
             var response = MapToTransactionResponse.Compile().Invoke(transaction);
             return Ok(response);
         }
 
-        /// <summary>
-        /// Xóa giao dịch
-        /// </summary>
-        /// <param name="id"></param>
-        /// <returns></returns>
         [HttpDelete("{id:guid}")]
         public async Task<IActionResult> DeleteTransaction(Guid id)
         {
             var (userId, success, message) = GetCurrentUserId();
-            if (!success)
-            {
-                return Unauthorized(message);
-            }
+            if (!success) return Unauthorized(message);
 
             var transaction = await _context.Transactions
                 .Include(t => t.Account)
                 .Include(t => t.Category)
                 .FirstOrDefaultAsync(t => t.Id == id && t.Account!.UserId == userId);
-            if (transaction == null)
-            {
-                return NotFound("Không tìm thấy giao dịch hoặc không có quyền truy cập");
-            }
+
+            if (transaction == null) return NotFound("Không tìm thấy giao dịch hoặc không có quyền truy cập");
 
             switch (transaction.Category!.CategoryGroup!.Type)
             {
                 case CategoryType.Expense:
-                    transaction.Account!.Balance += transaction.Amount; // Hoàn tiền
+                    transaction.Account!.Balance += transaction.Amount;
                     break;
                 case CategoryType.Income:
                     transaction.Account!.Balance -= transaction.Amount;

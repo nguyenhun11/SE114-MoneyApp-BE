@@ -20,8 +20,8 @@ namespace SE114_MoneyApp_BE.Controllers
             GroupName = g.GroupName,
             Type = g.Type,
             SortingOrder = g.SortingOrder,
-            CreatedAt = g.CreatedAt,
-            LastUpdatedAt = g.LastUpdatedAt
+            CreatedAt = DateTime.SpecifyKind(g.CreatedAt, DateTimeKind.Utc),
+            LastUpdatedAt = DateTime.SpecifyKind(g.LastUpdatedAt, DateTimeKind.Utc)
         };
 
         private async Task<ActionResult<List<CategoryGroupResponse>>> GetCategoryGroups(CategoryType? type)
@@ -106,8 +106,8 @@ namespace SE114_MoneyApp_BE.Controllers
                 GroupName = newGroup.GroupName,
                 Type = newGroup.Type,
                 SortingOrder = newGroup.SortingOrder,
-                CreatedAt = newGroup.CreatedAt,
-                LastUpdatedAt = newGroup.LastUpdatedAt
+                CreatedAt = DateTime.SpecifyKind(newGroup.CreatedAt, DateTimeKind.Utc),
+                LastUpdatedAt = DateTime.SpecifyKind(newGroup.LastUpdatedAt, DateTimeKind.Utc)
             };
             return Ok(response);
         }

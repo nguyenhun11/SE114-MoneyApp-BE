@@ -26,8 +26,8 @@ namespace SE114_MoneyApp_BE.Controllers
             ColorId = c.ColorId,
             IconId = c.IconId,
             SortingOrder = c.SortingOrder,
-            CreatedAt = c.CreatedAt,
-            LastUpdatedAt = c.LastUpdatedAt
+            CreatedAt = DateTime.SpecifyKind(c.CreatedAt, DateTimeKind.Utc),
+            LastUpdatedAt = DateTime.SpecifyKind(c.LastUpdatedAt, DateTimeKind.Utc)
         };
 
         #region GET

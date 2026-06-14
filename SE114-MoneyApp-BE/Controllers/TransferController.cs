@@ -21,10 +21,10 @@ namespace SE114_MoneyApp_BE.Controllers
             DestinationAccount = t.DestinationAccountId,
             DestinationAccountName = t.Destination!.AccountName,
             Amount = t.Amount,
-            TransferDate = t.TransferDate,
+            TransferDate = DateTime.SpecifyKind(t.TransferDate, DateTimeKind.Utc),
             Description = t.Description,
-            CreatedAt = t.CreatedAt,
-            LastUpdatedAt = t.LastUpdatedAt
+            CreatedAt = DateTime.SpecifyKind(t.CreatedAt, DateTimeKind.Utc),
+            LastUpdatedAt = DateTime.SpecifyKind(t.LastUpdatedAt, DateTimeKind.Utc)
         };
 
         // GET: api/Transfer/{userId}?startDate=2024-01-01&endDate=2024-12-31&source=accountId&destination=accountId
@@ -175,7 +175,7 @@ namespace SE114_MoneyApp_BE.Controllers
                 SourceAccountId = request.SourceAccountId,
                 DestinationAccountId = request.DestinationAccountId,
                 Amount = request.Amount,
-                TransferDate = request.TransferDate,
+                TransferDate = request.TransferDate.Date.ToUniversalTime(),
                 Description = request.Description
             };
 
@@ -238,7 +238,7 @@ namespace SE114_MoneyApp_BE.Controllers
             transfer.SourceAccountId = request.SourceAccountId;
             transfer.DestinationAccountId = request.DestinationAccountId;
             transfer.Amount = request.Amount;
-            transfer.TransferDate = request.TransferDate;
+            transfer.TransferDate = request.TransferDate.Date.ToUniversalTime();
             transfer.Description = request.Description;
             transfer.LastUpdatedAt = DateTime.UtcNow;
 

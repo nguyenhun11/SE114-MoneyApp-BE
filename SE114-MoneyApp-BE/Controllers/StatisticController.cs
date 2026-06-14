@@ -25,18 +25,24 @@ namespace SE114_MoneyApp_BE.Controllers
         {
             switch (groupBy)
             {
-                case GroupByPeriod.Day:
-                    return date.ToString("dd/MM/yyyy");
+                case GroupByPeriod.Day: return date.ToString("dd/MM/yyyy");
                 case GroupByPeriod.Week:
                     int weekOfYear = System.Globalization.ISOWeek.GetWeekOfYear(date);
                     return $"W{weekOfYear}-{date.Year}";
-                case GroupByPeriod.Month:
-                    return date.ToString("MM/yyyy");
-                case GroupByPeriod.Year:
-                    return date.ToString("yyyy");
-                default:
-                    return date.ToString("dd/MM/yyyy");
+                case GroupByPeriod.Month: return date.ToString("MM/yyyy");
+                case GroupByPeriod.Year: return date.ToString("yyyy");
+                default: return date.ToString("dd/MM/yyyy");
             }
+        }
+        private (DateTime utcStart, DateTime utcEnd) GetUtcTimeRange(DateTime startDate, DateTime endDate, int timeZoneOffset)
+        {
+            DateTime localStart = startDate.AddHours(timeZoneOffset).Date;
+            DateTime localEnd = endDate.AddHours(timeZoneOffset).Date;
+
+            DateTime utcStart = DateTime.SpecifyKind(localStart.AddHours(-timeZoneOffset), DateTimeKind.Utc);
+            DateTime utcEnd = DateTime.SpecifyKind(localEnd.AddDays(1).AddTicks(-1).AddHours(-timeZoneOffset), DateTimeKind.Utc);
+
+            return (utcStart, utcEnd);
         }
 
         private async Task<ActionResult<List<CategoryPieChartDto>>> GetPieChartInternal(
@@ -48,9 +54,7 @@ namespace SE114_MoneyApp_BE.Controllers
             var (userId, success, message) = GetCurrentUserId();
             if (!success) return Unauthorized(new { Message = message });
 
-            // BƯỚC 1: Dịch khoảng thời gian sang chuẩn UTC để quét sạch giao dịch trong ngày
-            var utcStart = startDate.Date.AddHours(-timeZoneOffset);
-            var utcEnd = endDate.Date.AddDays(1).AddTicks(-1).AddHours(-timeZoneOffset);
+            var (utcStart, utcEnd) = GetUtcTimeRange(startDate, endDate, timeZoneOffset);
 
             var query = await _context.Transactions
                 .Include(t => t.Category)
@@ -101,16 +105,11 @@ namespace SE114_MoneyApp_BE.Controllers
                     .OrderBy(t => t.TransactionDate)
                     .FirstOrDefaultAsync();
 
-                if (oldestTx == null)
-                {
-                    return Ok(new List<StackedBarChartDto>());
-                }
-
+                if (oldestTx == null) return Ok(new List<StackedBarChartDto>());
                 startDate = oldestTx.TransactionDate.AddHours(timeZoneOffset).Date;
             }
 
-            var utcStart = startDate.Value.Date.AddHours(-timeZoneOffset);
-            var utcEnd = endDate.Date.AddDays(1).AddTicks(-1).AddHours(-timeZoneOffset);
+            var (utcStart, utcEnd) = GetUtcTimeRange(startDate.Value, endDate, timeZoneOffset);
 
             var transactions = await _context.Transactions
                 .Include(t => t.Category)
@@ -133,7 +132,7 @@ namespace SE114_MoneyApp_BE.Controllers
                             CategoryName = gCat.Key.CategoryName,
                             ColorId = gCat.Key.ColorId,
                             IconId = gCat.Key.IconId,
-                            TotalAmount = Math.Abs(gCat.Sum(t => t.Amount))
+                            TotalAmount = Math.Abs(gCat.Sum(t => t.Amount)) // Luôn dùng trị tuyệt đối
                         }).ToList()
                 })
                 .OrderBy(x => transactions.First(t => GetPeriodLabel(t.TransactionDate.AddHours(timeZoneOffset), groupBy) == x.Period).TransactionDate)
@@ -143,68 +142,33 @@ namespace SE114_MoneyApp_BE.Controllers
         }
         #endregion
 
-
         #region API Endpoints
-
-        /// <summary>
-        /// Biểu đồ tròn các hạng mục chi tiêu
-        /// </summary>
         [HttpGet("pie-chart/expense")]
-        public async Task<ActionResult<List<CategoryPieChartDto>>> GetExpensePieChart(
-            [FromQuery] DateTime startDate,
-            [FromQuery] DateTime endDate,
-            [FromQuery] int timeZoneOffset = 7) // Thêm biến nhận múi giờ từ Android
+        public async Task<ActionResult<List<CategoryPieChartDto>>> GetExpensePieChart([FromQuery] DateTime startDate, [FromQuery] DateTime endDate, [FromQuery] int timeZoneOffset = 7)
         {
             return await GetPieChartInternal(startDate, endDate, CategoryType.Expense, timeZoneOffset);
         }
 
-        /// <summary>
-        /// Biểu đồ tròn các hạng mục thu nhập
-        /// </summary>
         [HttpGet("pie-chart/income")]
-        public async Task<ActionResult<List<CategoryPieChartDto>>> GetIncomePieChart(
-            [FromQuery] DateTime startDate,
-            [FromQuery] DateTime endDate,
-            [FromQuery] int timeZoneOffset = 7)
+        public async Task<ActionResult<List<CategoryPieChartDto>>> GetIncomePieChart([FromQuery] DateTime startDate, [FromQuery] DateTime endDate, [FromQuery] int timeZoneOffset = 7)
         {
             return await GetPieChartInternal(startDate, endDate, CategoryType.Income, timeZoneOffset);
         }
 
-        /// <summary>
-        /// Biểu đồ cột chồng các chi tiêu
-        /// </summary>
         [HttpGet("stacked-bar-chart/expense")]
-        public async Task<ActionResult<List<StackedBarChartDto>>> GetExpenseStackedBarChart(
-            [FromQuery] DateTime? startDate,
-            [FromQuery] DateTime endDate,
-            [FromQuery] GroupByPeriod groupBy = GroupByPeriod.Month,
-            [FromQuery] int timeZoneOffset = 7)
+        public async Task<ActionResult<List<StackedBarChartDto>>> GetExpenseStackedBarChart([FromQuery] DateTime? startDate, [FromQuery] DateTime endDate, [FromQuery] GroupByPeriod groupBy = GroupByPeriod.Month, [FromQuery] int timeZoneOffset = 7)
         {
             return await GetStackedBarChartInternal(startDate, endDate, groupBy, CategoryType.Expense, timeZoneOffset);
         }
 
-        /// <summary>
-        /// Biểu đồ cột chồng các thu nhập
-        /// </summary>
         [HttpGet("stacked-bar-chart/income")]
-        public async Task<ActionResult<List<StackedBarChartDto>>> GetIncomeStackedBarChart(
-            [FromQuery] DateTime? startDate,
-            [FromQuery] DateTime endDate,
-            [FromQuery] GroupByPeriod groupBy = GroupByPeriod.Month,
-            [FromQuery] int timeZoneOffset = 7)
+        public async Task<ActionResult<List<StackedBarChartDto>>> GetIncomeStackedBarChart([FromQuery] DateTime? startDate, [FromQuery] DateTime endDate, [FromQuery] GroupByPeriod groupBy = GroupByPeriod.Month, [FromQuery] int timeZoneOffset = 7)
         {
             return await GetStackedBarChartInternal(startDate, endDate, groupBy, CategoryType.Income, timeZoneOffset);
         }
 
-        /// <summary>
-        /// Biểu đồ dòng tiền (Cơ cấu Thu/Chi và Hiệu số)
-        /// </summary>
         [HttpGet("bar-chart/cashflow")]
-        public async Task<ActionResult<List<CashFlowBarChartDto>>> GetCashFlowBarChart(
-            [FromQuery] DateTime? startDate,
-            [FromQuery] DateTime endDate,
-            [FromQuery] GroupByPeriod groupBy = GroupByPeriod.Month,
-            [FromQuery] int timeZoneOffset = 7)
+        public async Task<ActionResult<List<CashFlowBarChartDto>>> GetCashFlowBarChart([FromQuery] DateTime? startDate, [FromQuery] DateTime endDate, [FromQuery] GroupByPeriod groupBy = GroupByPeriod.Month, [FromQuery] int timeZoneOffset = 7)
         {
             var (userId, success, message) = GetCurrentUserId();
             if (!success) return Unauthorized(new { Message = message });
@@ -216,16 +180,11 @@ namespace SE114_MoneyApp_BE.Controllers
                     .OrderBy(t => t.TransactionDate)
                     .FirstOrDefaultAsync();
 
-                if (oldestTx == null)
-                {
-                    return Ok(new List<CashFlowBarChartDto>());
-                }
-
+                if (oldestTx == null) return Ok(new List<CashFlowBarChartDto>());
                 startDate = oldestTx.TransactionDate.AddHours(timeZoneOffset).Date;
             }
 
-            var utcStart = startDate.Value.Date.AddHours(-timeZoneOffset);
-            var utcEnd = endDate.Date.AddDays(1).AddTicks(-1).AddHours(-timeZoneOffset);
+            var (utcStart, utcEnd) = GetUtcTimeRange(startDate.Value, endDate, timeZoneOffset);
 
             var transactions = await _context.Transactions
                 .Include(t => t.Category)
@@ -248,7 +207,6 @@ namespace SE114_MoneyApp_BE.Controllers
 
             return Ok(cashFlow);
         }
-
         #endregion
     }
 }

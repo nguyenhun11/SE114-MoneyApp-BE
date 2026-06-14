@@ -62,7 +62,7 @@ namespace SE114_MoneyApp_BE.Controllers
                     AccountId = ab.AccountId,
                     AccountName = ab.Account!.AccountName,
                     Amount = ab.Amount,
-                    CreatedAt = ab.CreatedAt
+                    CreatedAt = DateTime.SpecifyKind(ab.CreatedAt, DateTimeKind.Utc)
                 })
                 .ToListAsync();
 

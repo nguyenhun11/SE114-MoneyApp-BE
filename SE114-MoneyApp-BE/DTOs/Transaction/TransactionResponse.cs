@@ -21,7 +21,7 @@ namespace SE114_MoneyApp_BE.DTOs.Transaction
         public List<string> ImageUrls { get; set; } = new List<string>();
 
         //
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-        public DateTime LastUpdatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime CreatedAt { get; set; }
+        public DateTime LastUpdatedAt { get; set; }
     }
 }
