@@ -58,13 +58,14 @@ namespace SE114_MoneyApp_BE.Controllers
                          && t.TransactionDate >= utcStart
                          && t.TransactionDate <= utcEnd
                          && t.Category!.CategoryGroup!.Type == type)
-                .GroupBy(t => new { t.CategoryId, t.Category!.CategoryName, t.Category.ColorId })
+                .GroupBy(t => new { t.CategoryId, t.Category!.CategoryName, t.Category.ColorId, t.Category.IconId })
                 .Select(g => new CategoryPieChartDto
                 {
                     CategoryId = g.Key.CategoryId,
                     CategoryName = g.Key.CategoryName,
                     ColorId = g.Key.ColorId,
-                    TotalAmount = g.Sum(t => t.Amount)
+                    IconId = g.Key.IconId,
+                    TotalAmount = Math.Abs(g.Sum(t => t.Amount))
                 })
                 .OrderByDescending(x => x.TotalAmount)
                 .ToListAsync();
@@ -125,13 +126,14 @@ namespace SE114_MoneyApp_BE.Controllers
                 {
                     Period = gDay.Key,
                     CategoryBreakdowns = gDay
-                        .GroupBy(t => new { t.CategoryId, t.Category!.CategoryName, t.Category.ColorId })
+                        .GroupBy(t => new { t.CategoryId, t.Category!.CategoryName, t.Category.ColorId, t.Category.IconId })
                         .Select(gCat => new CategoryPieChartDto
                         {
                             CategoryId = gCat.Key.CategoryId,
                             CategoryName = gCat.Key.CategoryName,
                             ColorId = gCat.Key.ColorId,
-                            TotalAmount = gCat.Sum(t => t.Amount)
+                            IconId = gCat.Key.IconId,
+                            TotalAmount = Math.Abs(gCat.Sum(t => t.Amount))
                         }).ToList()
                 })
                 .OrderBy(x => transactions.First(t => GetPeriodLabel(t.TransactionDate.AddHours(timeZoneOffset), groupBy) == x.Period).TransactionDate)
@@ -238,8 +240,8 @@ namespace SE114_MoneyApp_BE.Controllers
                 .Select(g => new CashFlowBarChartDto
                 {
                     Period = g.Key,
-                    TotalIncome = g.Where(t => t.Category!.CategoryGroup!.Type == CategoryType.Income).Sum(t => t.Amount),
-                    TotalExpense = g.Where(t => t.Category!.CategoryGroup!.Type == CategoryType.Expense).Sum(t => t.Amount)
+                    TotalIncome = Math.Abs(g.Where(t => t.Category!.CategoryGroup!.Type == CategoryType.Income).Sum(t => t.Amount)),
+                    TotalExpense = Math.Abs(g.Where(t => t.Category!.CategoryGroup!.Type == CategoryType.Expense).Sum(t => t.Amount))
                 })
                 .OrderBy(x => transactions.First(t => GetPeriodLabel(t.TransactionDate.AddHours(timeZoneOffset), groupBy) == x.Period).TransactionDate)
                 .ToList();
