@@ -15,13 +15,20 @@ namespace SE114_MoneyApp_BE.Controllers
         private readonly AppDbContext _context;
         private readonly IConfiguration _configuration;
         private readonly TokenService _tokenService;
-        public AuthController(AppDbContext context, 
+        private readonly IEmailService _emailService;
+        private readonly ILogger<AuthController> _logger;
+
+        public AuthController(AppDbContext context,
             IConfiguration configuration,
-            TokenService tokenService)
+            TokenService tokenService,
+            IEmailService emailService,
+            ILogger<AuthController> logger)
         {
             _context = context;
             _configuration = configuration;
             _tokenService = tokenService;
+            _emailService = emailService;
+            _logger = logger;
         }
 
         // POST: api/auth/register
@@ -333,6 +340,79 @@ namespace SE114_MoneyApp_BE.Controllers
             await _context.SaveChangesAsync();
 
             return Ok(new { Message = "Đổi mật khẩu thành công!" });
+        }
+
+        // POST: api/auth/forgot-password
+        /// <summary>
+        /// Yêu cầu đặt lại mật khẩu (Gửi OTP qua email)
+        /// </summary>
+        [HttpPost("forgot-password")]
+        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
+        {
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email && u.IsActive);
+            if (user == null)
+            {
+                return NotFound(new { Message = "Email không tồn tại trong hệ thống hoặc đã bị khóa." });
+            }
+
+            // Kiểm tra nếu là tài khoản Google
+            if (!string.IsNullOrEmpty(user.GoogleId))
+            {
+                return BadRequest(new { Message = "Tài khoản này được đăng ký thông qua Google. Vui lòng sử dụng chức năng Đăng nhập bằng Google." });
+            }
+
+            // Sinh mã OTP 6 chữ số
+            var otp = new Random().Next(100000, 999999).ToString();
+            user.PasswordResetToken = otp;
+            user.ResetTokenExpiry = DateTime.UtcNow.AddMinutes(15);
+
+            await _context.SaveChangesAsync();
+
+            // Gửi email
+            try
+            {
+                string subject = "Mã xác nhận đặt lại mật khẩu - MoneyApp";
+                string body = $@"
+                    <h3>Yêu cầu đặt lại mật khẩu</h3>
+                    <p>Bạn đã yêu cầu đặt lại mật khẩu cho tài khoản MoneyApp.</p>
+                    <p>Mã OTP của bạn là: <b>{otp}</b></p>
+                    <p>Mã này có hiệu lực trong 15 phút. Nếu bạn không yêu cầu điều này, hãy bỏ qua email này.</p>";
+
+                await _emailService.SendEmailAsync(user.Email, subject, body);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi gửi email đặt lại mật khẩu cho {Email}", user.Email);
+                return StatusCode(500, new { Message = "Có lỗi xảy ra khi gửi email. Vui lòng thử lại sau.", Detail = ex.Message });
+            }
+
+            return Ok(new { Message = "Mã xác nhận đã được gửi đến email của bạn." });
+        }
+
+        // POST: api/auth/reset-password
+        /// <summary>
+        /// Đặt lại mật khẩu mới bằng mã xác nhận
+        /// </summary>
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
+        {
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email && u.IsActive);
+
+            if (user == null || user.PasswordResetToken != request.Token || user.ResetTokenExpiry < DateTime.UtcNow)
+            {
+                return BadRequest(new { Message = "Mã xác nhận không chính xác hoặc đã hết hạn." });
+            }
+
+            // Cập nhật mật khẩu mới
+            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+
+            // Xóa token sau khi dùng
+            user.PasswordResetToken = null;
+            user.ResetTokenExpiry = null;
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new { Message = "Đặt lại mật khẩu thành công. Vui lòng đăng nhập bằng mật khẩu mới." });
         }
     }
 }

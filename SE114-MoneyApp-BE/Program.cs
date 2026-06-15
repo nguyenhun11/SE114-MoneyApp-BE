@@ -49,6 +49,7 @@ builder.Services.AddSwaggerGen(options =>
 
 // Token Service
 builder.Services.AddScoped<TokenService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
