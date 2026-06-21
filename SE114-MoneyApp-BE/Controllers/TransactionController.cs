@@ -30,6 +30,7 @@ namespace SE114_MoneyApp_BE.Controllers
             accountColorId = t.Account!.ColorId,
             accountIconId = t.Account!.IconId,
             ImageUrls = t.ImageUrls,
+            MoodId = t.MoodId,
             CreatedAt = DateTime.SpecifyKind(t.CreatedAt, DateTimeKind.Utc),
             LastUpdatedAt = DateTime.SpecifyKind(t.LastUpdatedAt, DateTimeKind.Utc)
         };
@@ -125,6 +126,7 @@ namespace SE114_MoneyApp_BE.Controllers
                 Account = account,
                 Category = category,
                 Amount = absAmount,
+                MoodId = request.MoodId,
 
                 CreatedAt = DateTime.UtcNow,
                 LastUpdatedAt = DateTime.UtcNow
@@ -200,6 +202,7 @@ namespace SE114_MoneyApp_BE.Controllers
             transaction.Account = newAccount;
             transaction.Category = newCategory;
             transaction.Amount = newAbsAmount;
+            transaction.MoodId = request.MoodId;
 
             switch (newCategory.CategoryGroup!.Type)
             {

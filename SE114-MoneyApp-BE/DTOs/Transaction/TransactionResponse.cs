@@ -19,6 +19,7 @@ namespace SE114_MoneyApp_BE.DTOs.Transaction
         public int accountColorId { get; set; }
         public int accountIconId { get; set; }
         public List<string> ImageUrls { get; set; } = new List<string>();
+        public int MoodId { get; set; }
 
         //
         public DateTime CreatedAt { get; set; }

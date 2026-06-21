@@ -10,5 +10,6 @@ namespace SE114_MoneyApp_BE.DTOs.Transaction
         public DateTime Date { get; set; }
         public string Note { get; set; } = string.Empty;
         public List<string> ImageUrls { get; set; } = new List<string>();
+        public int MoodId { get; set; }
     }
 }
