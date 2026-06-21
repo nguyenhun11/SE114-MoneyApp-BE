@@ -21,6 +21,7 @@ namespace SE114_MoneyApp_BE.Controllers
             ImageUrl = user.ImageUrl,
             PhoneNumber = user.PhoneNumber,
             DailyStreak = user.DailyStreak,
+            DefaultCurrency = user.DefaultCurrency,
             CreatedAt = user.CreatedAt,
             LastUpdatedAt = user.LastUpdatedAt
         };
@@ -196,6 +197,7 @@ namespace SE114_MoneyApp_BE.Controllers
             user.Name = request.Name;
             user.Email = request.Email;
             user.ImageUrl = request.ImageUrl;
+            user.DefaultCurrency = request.DefaultCurrency;
             user.PhoneNumber = request.PhoneNumber;
             user.LastUpdatedAt = DateTime.UtcNow;
 
