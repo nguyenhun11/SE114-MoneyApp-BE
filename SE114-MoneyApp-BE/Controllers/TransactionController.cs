@@ -23,6 +23,7 @@ namespace SE114_MoneyApp_BE.Controllers
             CategoryName = t.Category != null ? t.Category.CategoryName : string.Empty,
             Type = t.Category != null && t.Category.CategoryGroup != null ? t.Category.CategoryGroup.Type : CategoryType.Expense,
 
+            Amount = t.BaseAmount,
             OriginalAmount = t.OriginalAmount,
             CurrencyCode = t.CurrencyCode,
             BaseAmount = t.BaseAmount,
@@ -36,6 +37,7 @@ namespace SE114_MoneyApp_BE.Controllers
             accountColorId = t.Account!.ColorId,
             accountIconId = t.Account!.IconId,
             ImageUrls = t.ImageUrls,
+            MoodId = t.MoodId,
             CreatedAt = DateTime.SpecifyKind(t.CreatedAt, DateTimeKind.Utc),
             LastUpdatedAt = DateTime.SpecifyKind(t.LastUpdatedAt, DateTimeKind.Utc)
         };
@@ -117,9 +119,10 @@ namespace SE114_MoneyApp_BE.Controllers
                 .FirstOrDefaultAsync(c => c.Id == request.CategoryId && c.UserId == userId);
             if (category == null) return BadRequest("Invalid category");
 
-            var absOriginalAmount = Math.Abs(request.OriginalAmount);
-            var absAccountAmount = Math.Abs(request.AccountAmount);
-            var absBaseAmount = Math.Abs(request.BaseAmount);
+            var amountValue = request.Amount > 0 ? request.Amount : request.BaseAmount;
+            var absAmount = Math.Abs(amountValue);
+            var absOriginalAmount = Math.Abs(request.OriginalAmount > 0 ? request.OriginalAmount : amountValue);
+            var absAccountAmount = Math.Abs(request.AccountAmount > 0 ? request.AccountAmount : amountValue);
             var currencyCode = !string.IsNullOrEmpty(request.CurrencyCode) ? request.CurrencyCode : account.CurrencyCode;
 
             var transaction = new Transaction
@@ -132,11 +135,12 @@ namespace SE114_MoneyApp_BE.Controllers
                 Account = account,
                 Category = category,
 
+                BaseAmount = absAmount,
                 OriginalAmount = absOriginalAmount,
                 CurrencyCode = currencyCode,
                 AccountAmount = absAccountAmount,
-                BaseAmount = absBaseAmount,
-                ExchangeRate = request.ExchangeRate,
+                ExchangeRate = request.ExchangeRate > 0 ? request.ExchangeRate : 1.0,
+                MoodId = request.MoodId,
 
                 CreatedAt = DateTime.UtcNow,
                 LastUpdatedAt = DateTime.UtcNow
@@ -199,9 +203,10 @@ namespace SE114_MoneyApp_BE.Controllers
                 .FirstOrDefaultAsync(c => c.Id == request.CategoryId && c.UserId == userId);
             if (newCategory == null) return BadRequest("Invalid category");
 
-            var newAbsOriginalAmount = Math.Abs(request.OriginalAmount);
-            var newAbsAccountAmount = Math.Abs(request.AccountAmount);
-            var newAbsBaseAmount = Math.Abs(request.BaseAmount);
+            var amountValue = request.Amount > 0 ? request.Amount : request.BaseAmount;
+            var newAbsAmount = Math.Abs(amountValue);
+            var newAbsOriginalAmount = Math.Abs(request.OriginalAmount > 0 ? request.OriginalAmount : amountValue);
+            var newAbsAccountAmount = Math.Abs(request.AccountAmount > 0 ? request.AccountAmount : amountValue);
             var newCurrencyCode = !string.IsNullOrEmpty(request.CurrencyCode) ? request.CurrencyCode : newAccount.CurrencyCode;
 
             transaction.AccountId = request.AccountId;
@@ -213,11 +218,12 @@ namespace SE114_MoneyApp_BE.Controllers
             transaction.Account = newAccount;
             transaction.Category = newCategory;
 
+            transaction.BaseAmount = newAbsAmount;
             transaction.OriginalAmount = newAbsOriginalAmount;
             transaction.CurrencyCode = newCurrencyCode;
             transaction.AccountAmount = newAbsAccountAmount;
-            transaction.BaseAmount = newAbsBaseAmount;
-            transaction.ExchangeRate = request.ExchangeRate;
+            transaction.ExchangeRate = request.ExchangeRate > 0 ? request.ExchangeRate : 1.0;
+            transaction.MoodId = request.MoodId;
 
             switch (newCategory.CategoryGroup!.Type)
             {
