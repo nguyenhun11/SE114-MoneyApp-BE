@@ -82,7 +82,7 @@ namespace SE114_MoneyApp_BE.Migrations
                     b.Property<Guid>("AccountId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<decimal>("Amount")
+                    b.Property<decimal>("BaseAmount")
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<DateTime>("CreatedAt")
@@ -210,7 +210,7 @@ namespace SE114_MoneyApp_BE.Migrations
                     b.Property<Guid>("AccountId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<decimal>("Amount")
+                    b.Property<decimal>("BaseAmount")
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<Guid>("CategoryId")
@@ -248,7 +248,7 @@ namespace SE114_MoneyApp_BE.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<decimal>("Amount")
+                    b.Property<decimal>("BaseAmount")
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<DateTime>("CreatedAt")

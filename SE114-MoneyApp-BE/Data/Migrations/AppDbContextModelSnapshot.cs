@@ -41,6 +41,10 @@ namespace SE114_MoneyApp_BE.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("CurrencyCode")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Description")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -247,10 +251,13 @@ namespace SE114_MoneyApp_BE.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<decimal>("AccountAmount")
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<Guid>("AccountId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<decimal>("Amount")
+                    b.Property<decimal>("BaseAmount")
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<Guid>("CategoryId")
@@ -258,6 +265,13 @@ namespace SE114_MoneyApp_BE.Migrations
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
+
+                    b.Property<string>("CurrencyCode")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<double>("ExchangeRate")
+                        .HasColumnType("float");
 
                     b.Property<string>("ImageUrls")
                         .IsRequired()
@@ -269,6 +283,9 @@ namespace SE114_MoneyApp_BE.Migrations
                     b.Property<string>("Note")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("OriginalAmount")
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<DateTime>("TransactionDate")
                         .HasColumnType("datetime2");
@@ -288,7 +305,7 @@ namespace SE114_MoneyApp_BE.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<decimal>("Amount")
+                    b.Property<decimal>("BaseAmount")
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<DateTime>("CreatedAt")
@@ -301,11 +318,23 @@ namespace SE114_MoneyApp_BE.Migrations
                     b.Property<Guid>("DestinationAccountId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<decimal>("DestinationAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<double>("DestinationExchangeRate")
+                        .HasColumnType("float");
+
                     b.Property<DateTime>("LastUpdatedAt")
                         .HasColumnType("datetime2");
 
                     b.Property<Guid>("SourceAccountId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("SourceAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<double>("SourceExchangeRate")
+                        .HasColumnType("float");
 
                     b.Property<DateTime>("TransferDate")
                         .HasColumnType("datetime2");
@@ -332,6 +361,10 @@ namespace SE114_MoneyApp_BE.Migrations
 
                     b.Property<int>("DailyStreak")
                         .HasColumnType("int");
+
+                    b.Property<string>("DefaultCurrency")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Email")
                         .IsRequired()

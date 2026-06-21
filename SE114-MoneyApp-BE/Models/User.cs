@@ -16,6 +16,7 @@ namespace SE114_MoneyApp_BE.Models
         public string? PhoneNumber { get; set; }
         public int DailyStreak { get; set; } = 0;
         public DateTime? LastActiveDate { get; set; }
+        public string DefaultCurrency { get; set; } = "VND";
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime LastUpdatedAt { get; set; } = DateTime.UtcNow;

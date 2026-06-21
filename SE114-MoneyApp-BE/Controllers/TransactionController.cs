@@ -22,7 +22,13 @@ namespace SE114_MoneyApp_BE.Controllers
             CategoryId = t.CategoryId,
             CategoryName = t.Category != null ? t.Category.CategoryName : string.Empty,
             Type = t.Category != null && t.Category.CategoryGroup != null ? t.Category.CategoryGroup.Type : CategoryType.Expense,
-            Amount = t.Amount,
+
+            OriginalAmount = t.OriginalAmount,
+            CurrencyCode = t.CurrencyCode,
+            BaseAmount = t.BaseAmount,
+            AccountAmount = t.AccountAmount,
+            ExchangeRate = t.ExchangeRate,
+
             Date = DateTime.SpecifyKind(t.TransactionDate, DateTimeKind.Utc),
             Note = t.Note,
             categoryColorId = t.Category!.ColorId,
@@ -111,20 +117,26 @@ namespace SE114_MoneyApp_BE.Controllers
                 .FirstOrDefaultAsync(c => c.Id == request.CategoryId && c.UserId == userId);
             if (category == null) return BadRequest("Invalid category");
 
-            var absAmount = Math.Abs(request.Amount);
+            var absOriginalAmount = Math.Abs(request.OriginalAmount);
+            var absAccountAmount = Math.Abs(request.AccountAmount);
+            var absBaseAmount = Math.Abs(request.BaseAmount);
+            var currencyCode = !string.IsNullOrEmpty(request.CurrencyCode) ? request.CurrencyCode : account.CurrencyCode;
 
             var transaction = new Transaction
             {
                 AccountId = request.AccountId,
                 CategoryId = request.CategoryId,
-
                 TransactionDate = DateTime.SpecifyKind(request.Date.Date, DateTimeKind.Utc),
-
                 Note = request.Note,
                 ImageUrls = request.ImageUrls,
                 Account = account,
                 Category = category,
-                Amount = absAmount,
+
+                OriginalAmount = absOriginalAmount,
+                CurrencyCode = currencyCode,
+                AccountAmount = absAccountAmount,
+                BaseAmount = absBaseAmount,
+                ExchangeRate = request.ExchangeRate,
 
                 CreatedAt = DateTime.UtcNow,
                 LastUpdatedAt = DateTime.UtcNow
@@ -133,10 +145,10 @@ namespace SE114_MoneyApp_BE.Controllers
             switch (category.CategoryGroup!.Type)
             {
                 case CategoryType.Expense:
-                    account.Balance -= absAmount;
+                    account.Balance -= absAccountAmount;
                     break;
                 case CategoryType.Income:
-                    account.Balance += absAmount;
+                    account.Balance += absAccountAmount;
                     break;
                 default:
                     return BadRequest("Invalid category type");
@@ -167,14 +179,14 @@ namespace SE114_MoneyApp_BE.Controllers
 
             if (oldAccount != null && oldCategory != null)
             {
-                var oldAbsAmount = Math.Abs(transaction.Amount);
+                var oldAmount = transaction.AccountAmount;
                 switch (oldCategory.CategoryGroup!.Type)
                 {
                     case CategoryType.Expense:
-                        oldAccount.Balance += oldAbsAmount;
+                        oldAccount.Balance += oldAmount;
                         break;
                     case CategoryType.Income:
-                        oldAccount.Balance -= oldAbsAmount;
+                        oldAccount.Balance -= oldAmount;
                         break;
                 }
             }
@@ -187,27 +199,33 @@ namespace SE114_MoneyApp_BE.Controllers
                 .FirstOrDefaultAsync(c => c.Id == request.CategoryId && c.UserId == userId);
             if (newCategory == null) return BadRequest("Invalid category");
 
-            var newAbsAmount = Math.Abs(request.Amount);
+            var newAbsOriginalAmount = Math.Abs(request.OriginalAmount);
+            var newAbsAccountAmount = Math.Abs(request.AccountAmount);
+            var newAbsBaseAmount = Math.Abs(request.BaseAmount);
+            var newCurrencyCode = !string.IsNullOrEmpty(request.CurrencyCode) ? request.CurrencyCode : newAccount.CurrencyCode;
 
             transaction.AccountId = request.AccountId;
             transaction.CategoryId = request.CategoryId;
-
             transaction.TransactionDate = DateTime.SpecifyKind(request.Date.Date, DateTimeKind.Utc);
-
             transaction.Note = request.Note;
             transaction.ImageUrls = request.ImageUrls;
             transaction.LastUpdatedAt = DateTime.UtcNow;
             transaction.Account = newAccount;
             transaction.Category = newCategory;
-            transaction.Amount = newAbsAmount;
+
+            transaction.OriginalAmount = newAbsOriginalAmount;
+            transaction.CurrencyCode = newCurrencyCode;
+            transaction.AccountAmount = newAbsAccountAmount;
+            transaction.BaseAmount = newAbsBaseAmount;
+            transaction.ExchangeRate = request.ExchangeRate;
 
             switch (newCategory.CategoryGroup!.Type)
             {
                 case CategoryType.Expense:
-                    newAccount.Balance -= newAbsAmount;
+                    newAccount.Balance -= newAbsAccountAmount;
                     break;
                 case CategoryType.Income:
-                    newAccount.Balance += newAbsAmount;
+                    newAccount.Balance += newAbsAccountAmount;
                     break;
             }
 
@@ -233,10 +251,10 @@ namespace SE114_MoneyApp_BE.Controllers
             switch (transaction.Category!.CategoryGroup!.Type)
             {
                 case CategoryType.Expense:
-                    transaction.Account!.Balance += transaction.Amount;
+                    transaction.Account!.Balance += transaction.AccountAmount;
                     break;
                 case CategoryType.Income:
-                    transaction.Account!.Balance -= transaction.Amount;
+                    transaction.Account!.Balance -= transaction.AccountAmount;
                     break;
             }
 

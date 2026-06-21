@@ -9,6 +9,7 @@ namespace SE114_MoneyApp_BE.DTOs.Account
         public int IconId { get; set; }
         public string Description { get; set; } = string.Empty;
         public decimal Balance { get; set; }
+        public string CurrencyCode { get; set; } = string.Empty;
         public bool IncludeInTotalBalance { get; set; } = true;
     }
 }

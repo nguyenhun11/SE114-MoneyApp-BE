@@ -7,6 +7,7 @@ namespace SE114_MoneyApp_BE.DTOs.AdjustBalance
         public Guid Id { get; set; }
         public Guid AccountId { get; set; }
         public string AccountName { get; set; } = string.Empty;
+        public string CurrencyCode { get; set; } = string.Empty;
         public decimal Amount { get; set; }
         public DateTime CreatedAt { get; set; }
     }
