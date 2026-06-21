@@ -12,8 +12,8 @@ using SE114_MoneyApp_BE.Data;
 namespace SE114_MoneyApp_BE.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260615084742_AddPasswordResetFields")]
-    partial class AddPasswordResetFields
+    [Migration("20260621104019_AddCurrencySystem_Fixed")]
+    partial class AddCurrencySystem_Fixed
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -43,6 +43,10 @@ namespace SE114_MoneyApp_BE.Migrations
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
+
+                    b.Property<string>("CurrencyCode")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Description")
                         .IsRequired()
@@ -82,7 +86,7 @@ namespace SE114_MoneyApp_BE.Migrations
                     b.Property<Guid>("AccountId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<decimal>("BaseAmount")
+                    b.Property<decimal>("Amount")
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<DateTime>("CreatedAt")
@@ -176,6 +180,49 @@ namespace SE114_MoneyApp_BE.Migrations
                     b.ToTable("CategoryGroups");
                 });
 
+            modelBuilder.Entity("SE114_MoneyApp_BE.Models.Goal", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ColorId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal>("CurrentAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("Deadline")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("IconId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("TargetAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Goals");
+                });
+
             modelBuilder.Entity("SE114_MoneyApp_BE.Models.RefreshToken", b =>
                 {
                     b.Property<int>("Id")
@@ -207,6 +254,9 @@ namespace SE114_MoneyApp_BE.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<decimal>("AccountAmount")
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<Guid>("AccountId")
                         .HasColumnType("uniqueidentifier");
 
@@ -219,6 +269,13 @@ namespace SE114_MoneyApp_BE.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("CurrencyCode")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<double>("ExchangeRate")
+                        .HasColumnType("float");
+
                     b.Property<string>("ImageUrls")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -229,6 +286,9 @@ namespace SE114_MoneyApp_BE.Migrations
                     b.Property<string>("Note")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("OriginalAmount")
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<DateTime>("TransactionDate")
                         .HasColumnType("datetime2");
@@ -261,11 +321,23 @@ namespace SE114_MoneyApp_BE.Migrations
                     b.Property<Guid>("DestinationAccountId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<decimal>("DestinationAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<double>("DestinationExchangeRate")
+                        .HasColumnType("float");
+
                     b.Property<DateTime>("LastUpdatedAt")
                         .HasColumnType("datetime2");
 
                     b.Property<Guid>("SourceAccountId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("SourceAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<double>("SourceExchangeRate")
+                        .HasColumnType("float");
 
                     b.Property<DateTime>("TransferDate")
                         .HasColumnType("datetime2");
@@ -292,6 +364,10 @@ namespace SE114_MoneyApp_BE.Migrations
 
                     b.Property<int>("DailyStreak")
                         .HasColumnType("int");
+
+                    b.Property<string>("DefaultCurrency")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Email")
                         .IsRequired()
@@ -388,6 +464,17 @@ namespace SE114_MoneyApp_BE.Migrations
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("SE114_MoneyApp_BE.Models.Goal", b =>
+                {
+                    b.HasOne("SE114_MoneyApp_BE.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("User");

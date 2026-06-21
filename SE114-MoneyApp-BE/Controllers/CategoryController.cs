@@ -408,9 +408,9 @@ namespace SE114_MoneyApp_BE.Controllers
                     foreach (var t in relatedTransactions)
                     {
                         if (categoryToDelete.CategoryGroup!.Type == CategoryType.Expense)
-                            t.Account!.Balance += t.Amount;
+                            t.Account!.Balance += t.BaseAmount;
                         else
-                            t.Account!.Balance -= t.Amount;
+                            t.Account!.Balance -= t.BaseAmount;
                     }
                     _context.Transactions.RemoveRange(relatedTransactions);
                     break;

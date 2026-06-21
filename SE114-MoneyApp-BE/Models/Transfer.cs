@@ -9,7 +9,11 @@ namespace SE114_MoneyApp_BE.Models
         public Guid Id { get; set; } = Guid.NewGuid();
         public Guid SourceAccountId { get; set; }
         public Guid DestinationAccountId { get; set; }
-        [Column(TypeName = "decimal(18,2)")] public decimal Amount { get; set; }
+        [Column(TypeName = "decimal(18,2)")] public decimal SourceAmount { get; set; }
+        [Column(TypeName = "decimal(18,2)")] public decimal DestinationAmount { get; set; }
+        [Column(TypeName = "decimal(18,2)")] public decimal BaseAmount { get; set; }
+        public double SourceExchangeRate { get; set; } = 1.0;
+        public double DestinationExchangeRate { get; set; } = 1.0;
         public DateTime TransferDate { get; set; }
         public string Description { get; set; } = string.Empty;
 

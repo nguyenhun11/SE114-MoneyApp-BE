@@ -14,6 +14,7 @@ namespace SE114_MoneyApp_BE.Models
 
         [Column(TypeName = "decimal(18,2)")]
         public decimal Balance { get; set; }
+        public string CurrencyCode { get; set; } = "VND";
         public string Description { get; set; } = string.Empty;
         public bool IncludeInTotalBalance { get; set; } = true;
         public int SortingOrder { get; set; }

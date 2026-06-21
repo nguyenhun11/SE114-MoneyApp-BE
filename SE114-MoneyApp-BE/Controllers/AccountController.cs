@@ -1,4 +1,4 @@
-﻿ using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Conventions;
@@ -24,6 +24,7 @@ namespace SE114_MoneyApp_BE.Controllers
             ColorId = account.ColorId,
             IconId = account.IconId,
             Balance = account.Balance,
+            CurrencyCode = account.CurrencyCode,
             Description = account.Description,
             IncludeInTotalBalance = account.IncludeInTotalBalance,
             SortingOrder = account.SortingOrder,
@@ -89,18 +90,18 @@ namespace SE114_MoneyApp_BE.Controllers
         /// </summary>
         /// <returns></returns>
         [HttpGet("total-balance")]
-        public async Task<ActionResult<decimal>> GetTotalBalance()
+        public async Task<ActionResult<Dictionary<string, decimal>>> GetTotalBalance()
         {
             var (userId, success, message) = GetCurrentUserId();
-            if (!success)
-            {
-                return Unauthorized(new { Message = message });
-            }
+            if (!success) return Unauthorized(new { Message = message });
 
-            var totalBalance = await _context.Accounts
+            var balances = await _context.Accounts
                 .Where(a => a.UserId == userId && a.IsActive && a.IncludeInTotalBalance)
-                .SumAsync(a => a.Balance);
-            return Ok(totalBalance);
+                .GroupBy(a => a.CurrencyCode)
+                .Select(g => new { Currency = g.Key, Total = g.Sum(a => a.Balance) })
+                .ToDictionaryAsync(k => k.Currency, v => v.Total);
+
+            return Ok(balances);
         }
 
 
@@ -113,7 +114,6 @@ namespace SE114_MoneyApp_BE.Controllers
                 .ToListAsync();
 
             bool isChanged = false;
-
             for (int i = 0; i < accounts.Count; i++)
             {
                 if (accounts[i].SortingOrder != i)
@@ -123,11 +123,7 @@ namespace SE114_MoneyApp_BE.Controllers
                 }
             }
 
-            if (isChanged)
-            {
-                await _context.SaveChangesAsync();
-            }
-
+            if (isChanged) await _context.SaveChangesAsync();
             return accounts.Count;
         }
 
@@ -141,10 +137,7 @@ namespace SE114_MoneyApp_BE.Controllers
         public async Task<ActionResult<AccountResponse>> CreateAccount([FromBody] AccountRequest request)
         {
             var (userId, success, message) = GetCurrentUserId();
-            if (!success)
-            {
-                return Unauthorized(new { Message = message });
-            }
+            if (!success) return Unauthorized(new { Message = message });
 
             int nextOrder = await NormalizeAndGetNextSortingOrderAsync(userId);
 
@@ -155,6 +148,7 @@ namespace SE114_MoneyApp_BE.Controllers
                 ColorId = request.ColorId,
                 IconId = request.IconId,
                 Balance = request.Balance,
+                CurrencyCode = !string.IsNullOrEmpty(request.CurrencyCode) ? request.CurrencyCode : "VND", // LƯU TIỀN TỆ LÚC TẠO
                 Description = request.Description,
                 IncludeInTotalBalance = request.IncludeInTotalBalance,
                 SortingOrder = nextOrder
@@ -164,7 +158,6 @@ namespace SE114_MoneyApp_BE.Controllers
             await _context.SaveChangesAsync();
 
             var response = MapToAccountResponse.Compile().Invoke(newAccount);
-
             return Ok(response);
         }
 
@@ -179,32 +172,25 @@ namespace SE114_MoneyApp_BE.Controllers
         public async Task<IActionResult> UpdateAccount(Guid id, [FromBody] AccountRequest request)
         {
             var (userId, success, message) = GetCurrentUserId();
-            if (!success)
-            {
-                return Unauthorized(new { Message = message });
-            }
+            if (!success) return Unauthorized(new { Message = message });
 
             var account = await _context.Accounts
-                .FirstOrDefaultAsync(a => a.Id == id 
-                    && a.UserId == userId 
-                    && a.IsActive);
+                .FirstOrDefaultAsync(a => a.Id == id && a.UserId == userId && a.IsActive);
 
-            if (account == null)
-            {
-                return NotFound(new { Message = "Tài khoản không tồn tại hoặc bạn không có quyền chỉnh sửa" });
-            }
+            if (account == null) return NotFound(new { Message = "Tài khoản không tồn tại" });
 
             account.AccountName = request.AccountName;
             account.ColorId = request.ColorId;
             account.IconId = request.IconId;
             account.Description = request.Description;
             account.IncludeInTotalBalance = request.IncludeInTotalBalance;
-            account.LastUpdatedAt = DateTime.UtcNow; 
+            account.LastUpdatedAt = DateTime.UtcNow;
+
+            // Không cho phép update CurrencyCode
 
             if (account.Balance != request.Balance)
             {
                 decimal amountDifference = request.Balance - account.Balance;
-
                 var adjustBalance = new AdjustBalance
                 {
                     AccountId = account.Id,
@@ -216,11 +202,7 @@ namespace SE114_MoneyApp_BE.Controllers
             }
 
             await _context.SaveChangesAsync();
-
-            return Ok(new
-            {
-                Message = "Cập nhật tài khoản thành công"
-            });
+            return Ok(new { Message = "Cập nhật tài khoản thành công" });
         }
 
         /// <summary>
@@ -236,7 +218,6 @@ namespace SE114_MoneyApp_BE.Controllers
             if (!success) return Unauthorized(new { Message = message });
 
             int newOrder = request.NewOrder;
-
             var accounts = await _context.Accounts
                 .Where(a => a.UserId == userId && a.IsActive)
                 .OrderBy(a => a.SortingOrder)
@@ -260,7 +241,6 @@ namespace SE114_MoneyApp_BE.Controllers
             }
 
             await _context.SaveChangesAsync();
-
             return Ok(new { Message = "Cập nhật vị trí thành công!" });
         }
 
@@ -281,20 +261,14 @@ namespace SE114_MoneyApp_BE.Controllers
             var (userId, success, message) = GetCurrentUserId();
             if (!success) return Unauthorized(new { Message = message });
 
-            // 1. TÌM VÍ CẦN XÓA
             var accountToDelete = await _context.Accounts
                 .FirstOrDefaultAsync(a => a.Id == id && a.UserId == userId && a.IsActive);
 
-            if (accountToDelete == null)
-            {
-                return NotFound(new { Message = "Không tìm thấy tài khoản hoặc bạn không có quyền xóa" });
-            }
+            if (accountToDelete == null) return NotFound(new { Message = "Không tìm thấy tài khoản" });
 
-            // 2. LẤY TOÀN BỘ LỊCH SỬ LIÊN QUAN
             var transactions = await _context.Transactions.Where(t => t.AccountId == id).ToListAsync();
             var adjustBalances = await _context.AdjustBalances.Where(ab => ab.AccountId == id).ToListAsync();
 
-            // Lấy Transfer và nạp sẵn ví đối tác (Source/Destination) để tiện hoàn tiền
             var transfersAsSource = await _context.Transfers
                 .Include(t => t.Destination)
                 .Where(t => t.SourceAccountId == id).ToListAsync();
@@ -303,64 +277,58 @@ namespace SE114_MoneyApp_BE.Controllers
                 .Include(t => t.Source)
                 .Where(t => t.DestinationAccountId == id).ToListAsync();
 
-            // 3. XỬ LÝ THEO CHẾ ĐỘ
             switch (mode.ToLower())
             {
                 case "move":
                     if (!fallbackAccountId.HasValue || fallbackAccountId.Value == id)
-                    {
-                        return BadRequest(new { Message = "Vui lòng chọn một ví dự phòng hợp lệ để chuyển dữ liệu." });
-                    }
+                        return BadRequest(new { Message = "Vui lòng chọn một ví dự phòng hợp lệ." });
 
                     var fallbackAccount = await _context.Accounts
                         .FirstOrDefaultAsync(a => a.Id == fallbackAccountId.Value && a.UserId == userId && a.IsActive);
 
-                    if (fallbackAccount == null)
-                    {
-                        return BadRequest(new { Message = "Ví dự phòng không tồn tại." });
-                    }
+                    if (fallbackAccount == null) return BadRequest(new { Message = "Ví dự phòng không tồn tại." });
 
-                    // A. Chuyển Transactions và AdjustBalances
+                    // ĐÃ FIX: CHẶN CHUYỂN DỮ LIỆU KHÁC LOẠI TIỀN TỆ
+                    if (fallbackAccount.CurrencyCode != accountToDelete.CurrencyCode)
+                        return BadRequest(new { Message = $"Chỉ có thể chuyển sang ví có cùng đơn vị tiền tệ ({accountToDelete.CurrencyCode})." });
+
                     foreach (var t in transactions) t.AccountId = fallbackAccount.Id;
                     foreach (var ab in adjustBalances) ab.AccountId = fallbackAccount.Id;
 
-                    // B. Chuyển Transfers và triệt tiêu giao dịch "Tự chuyển cho chính mình"
                     foreach (var t in transfersAsSource)
                     {
                         if (t.DestinationAccountId == fallbackAccount.Id)
-                            _context.Transfers.Remove(t); // Ví A -> Ví B, giờ A nhập vào B => Xóa
+                            _context.Transfers.Remove(t);
                         else
                             t.SourceAccountId = fallbackAccount.Id;
                     }
                     foreach (var t in transfersAsDest)
                     {
                         if (t.SourceAccountId == fallbackAccount.Id)
-                            _context.Transfers.Remove(t); // Ví B -> Ví A, giờ A nhập vào B => Xóa
+                            _context.Transfers.Remove(t);
                         else
                             t.DestinationAccountId = fallbackAccount.Id;
                     }
 
-                    // C. Cộng dồn số dư của ví bị xóa vào ví dự phòng
                     fallbackAccount.Balance += accountToDelete.Balance;
                     break;
 
                 case "delete_all":
-                    // A. Xóa sạch Transactions và AdjustBalances
                     _context.Transactions.RemoveRange(transactions);
                     _context.AdjustBalances.RemoveRange(adjustBalances);
 
-                    // B. Hoàn tiền cho các ví đối tác trong Transfer trước khi xóa
+                    // ĐÃ FIX: HOÀN TRẢ ĐÚNG TRƯỜNG TIỀN TỆ CHO TỪNG VÍ
                     foreach (var t in transfersAsSource)
                     {
-                        // Tiền đi từ Ví A (bị xóa) đến Ví B. Giờ xóa giao dịch -> B mất tiền
-                        t.Destination!.Balance -= t.Amount;
+                        // Xóa luồng đi -> Ví đích bị lấy lại tiền
+                        t.Destination!.Balance -= t.DestinationAmount;
                     }
                     _context.Transfers.RemoveRange(transfersAsSource);
 
                     foreach (var t in transfersAsDest)
                     {
-                        // Tiền đi từ Ví B đến Ví A (bị xóa). Giờ xóa giao dịch -> B lấy lại tiền
-                        t.Source!.Balance += t.Amount;
+                        // Xóa luồng đến -> Ví nguồn được trả lại tiền
+                        t.Source!.Balance += t.SourceAmount;
                     }
                     _context.Transfers.RemoveRange(transfersAsDest);
                     break;
@@ -370,10 +338,8 @@ namespace SE114_MoneyApp_BE.Controllers
                     break;
             }
 
-            // 4. Xóa mềm
             accountToDelete.IsActive = false;
             accountToDelete.LastUpdatedAt = DateTime.UtcNow;
-
             accountToDelete.Balance = 0;
             accountToDelete.IncludeInTotalBalance = false;
 
@@ -382,5 +348,6 @@ namespace SE114_MoneyApp_BE.Controllers
 
             return Ok(new { Message = "Đã xóa tài khoản thành công" });
         }
+
     }
 }

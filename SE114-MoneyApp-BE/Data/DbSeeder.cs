@@ -281,120 +281,120 @@ namespace SE114_MoneyApp_BE.Data
             // ---- THÁNG 1 / 2025 ----
             transactions.AddRange(new[]
             {
-                new Transaction { Account = u1VCB,    Category = c1Salary,        Amount = 18_000_000, TransactionDate = D(2025,1,5),  Note = "Lương tháng 1" },
-                new Transaction { Account = u1TPBank, Category = c1Freelance,     Amount = 3_500_000,  TransactionDate = D(2025,1,8),  Note = "Dự án web freelance" },
-                new Transaction { Account = u1Cash,   Category = c1Food,          Amount = 55_000,     TransactionDate = D(2025,1,3),  Note = "Ăn sáng phở" },
-                new Transaction { Account = u1Cash,   Category = c1Food,          Amount = 120_000,    TransactionDate = D(2025,1,5),  Note = "Cơm trưa văn phòng" },
-                new Transaction { Account = u1Cash,   Category = c1Food,          Amount = 85_000,     TransactionDate = D(2025,1,7),  Note = "Bún bò bữa tối" },
-                new Transaction { Account = u1TPBank, Category = c1Rent,          Amount = 4_500_000,  TransactionDate = D(2025,1,2),  Note = "Tiền thuê nhà T1" },
-                new Transaction { Account = u1TPBank, Category = c1Utilities,     Amount = 350_000,    TransactionDate = D(2025,1,10), Note = "Tiền điện tháng 1" },
-                new Transaction { Account = u1TPBank, Category = c1Utilities,     Amount = 90_000,     TransactionDate = D(2025,1,10), Note = "Tiền nước tháng 1" },
-                new Transaction { Account = u1MoMo,   Category = c1Transport,     Amount = 45_000,     TransactionDate = D(2025,1,6),  Note = "Grab đi làm" },
-                new Transaction { Account = u1MoMo,   Category = c1Transport,     Amount = 38_000,     TransactionDate = D(2025,1,9),  Note = "Grab về nhà" },
-                new Transaction { Account = u1TPBank, Category = c1Transport,     Amount = 200_000,    TransactionDate = D(2025,1,15), Note = "Đổ xăng xe máy" },
-                new Transaction { Account = u1TPBank, Category = c1Shopping,      Amount = 850_000,    TransactionDate = D(2025,1,18), Note = "Mua quần áo Tết" },
-                new Transaction { Account = u1Cash,   Category = c1Food,          Amount = 430_000,    TransactionDate = D(2025,1,20), Note = "Ăn tất niên với gia đình" },
-                new Transaction { Account = u1VCB,    Category = c1Gift,          Amount = 1_200_000,  TransactionDate = D(2025,1,25), Note = "Mua quà Tết tặng bố mẹ" },
-                new Transaction { Account = u1Cash,   Category = c1Entertainment, Amount = 180_000,    TransactionDate = D(2025,1,28), Note = "Xem phim Tết" },
-                new Transaction { Account = u1VCB,    Category = c1Bonus,         Amount = 5_000_000,  TransactionDate = D(2025,1,30), Note = "Thưởng Tết công ty" },
+                new Transaction { Account = u1VCB,    Category = c1Salary,        BaseAmount = 18_000_000, TransactionDate = D(2025,1,5),  Note = "Lương tháng 1" },
+                new Transaction { Account = u1TPBank, Category = c1Freelance,     BaseAmount = 3_500_000,  TransactionDate = D(2025,1,8),  Note = "Dự án web freelance" },
+                new Transaction { Account = u1Cash,   Category = c1Food,          BaseAmount = 55_000,     TransactionDate = D(2025,1,3),  Note = "Ăn sáng phở" },
+                new Transaction { Account = u1Cash,   Category = c1Food,          BaseAmount = 120_000,    TransactionDate = D(2025,1,5),  Note = "Cơm trưa văn phòng" },
+                new Transaction { Account = u1Cash,   Category = c1Food,          BaseAmount = 85_000,     TransactionDate = D(2025,1,7),  Note = "Bún bò bữa tối" },
+                new Transaction { Account = u1TPBank, Category = c1Rent,          BaseAmount = 4_500_000,  TransactionDate = D(2025,1,2),  Note = "Tiền thuê nhà T1" },
+                new Transaction { Account = u1TPBank, Category = c1Utilities,     BaseAmount = 350_000,    TransactionDate = D(2025,1,10), Note = "Tiền điện tháng 1" },
+                new Transaction { Account = u1TPBank, Category = c1Utilities,     BaseAmount = 90_000,     TransactionDate = D(2025,1,10), Note = "Tiền nước tháng 1" },
+                new Transaction { Account = u1MoMo,   Category = c1Transport,     BaseAmount = 45_000,     TransactionDate = D(2025,1,6),  Note = "Grab đi làm" },
+                new Transaction { Account = u1MoMo,   Category = c1Transport,     BaseAmount = 38_000,     TransactionDate = D(2025,1,9),  Note = "Grab về nhà" },
+                new Transaction { Account = u1TPBank, Category = c1Transport,     BaseAmount = 200_000,    TransactionDate = D(2025,1,15), Note = "Đổ xăng xe máy" },
+                new Transaction { Account = u1TPBank, Category = c1Shopping,      BaseAmount = 850_000,    TransactionDate = D(2025,1,18), Note = "Mua quần áo Tết" },
+                new Transaction { Account = u1Cash,   Category = c1Food,          BaseAmount = 430_000,    TransactionDate = D(2025,1,20), Note = "Ăn tất niên với gia đình" },
+                new Transaction { Account = u1VCB,    Category = c1Gift,          BaseAmount = 1_200_000,  TransactionDate = D(2025,1,25), Note = "Mua quà Tết tặng bố mẹ" },
+                new Transaction { Account = u1Cash,   Category = c1Entertainment, BaseAmount = 180_000,    TransactionDate = D(2025,1,28), Note = "Xem phim Tết" },
+                new Transaction { Account = u1VCB,    Category = c1Bonus,         BaseAmount = 5_000_000,  TransactionDate = D(2025,1,30), Note = "Thưởng Tết công ty" },
             });
 
             // ---- THÁNG 2 / 2025 ----
             transactions.AddRange(new[]
             {
-                new Transaction { Account = u1VCB,    Category = c1Salary,        Amount = 18_000_000, TransactionDate = D(2025,2,5),  Note = "Lương tháng 2" },
-                new Transaction { Account = u1Cash,   Category = c1Food,          Amount = 65_000,     TransactionDate = D(2025,2,2),  Note = "Ăn sáng bánh mì" },
-                new Transaction { Account = u1Cash,   Category = c1Food,          Amount = 110_000,    TransactionDate = D(2025,2,5),  Note = "Cơm văn phòng" },
-                new Transaction { Account = u1Cash,   Category = c1Food,          Amount = 280_000,    TransactionDate = D(2025,2,14), Note = "Ăn tối Valentine" },
-                new Transaction { Account = u1TPBank, Category = c1Rent,          Amount = 4_500_000,  TransactionDate = D(2025,2,2),  Note = "Tiền thuê nhà T2" },
-                new Transaction { Account = u1TPBank, Category = c1Utilities,     Amount = 320_000,    TransactionDate = D(2025,2,10), Note = "Tiền điện tháng 2" },
-                new Transaction { Account = u1MBBank, Category = c1Health,        Amount = 250_000,    TransactionDate = D(2025,2,8),  Note = "Khám sức khỏe định kỳ" },
-                new Transaction { Account = u1MBBank, Category = c1Health,        Amount = 180_000,    TransactionDate = D(2025,2,9),  Note = "Mua thuốc" },
-                new Transaction { Account = u1TPBank, Category = c1Education,     Amount = 1_200_000,  TransactionDate = D(2025,2,12), Note = "Học phí khóa tiếng Anh" },
-                new Transaction { Account = u1MoMo,   Category = c1Transport,     Amount = 55_000,     TransactionDate = D(2025,2,15), Note = "Grab đi làm" },
-                new Transaction { Account = u1VCB,    Category = c1Shopping,      Amount = 450_000,    TransactionDate = D(2025,2,20), Note = "Mua sách kỹ năng" },
-                new Transaction { Account = u1TPBank, Category = c1Entertainment, Amount = 300_000,    TransactionDate = D(2025,2,22), Note = "Karaoke với đồng nghiệp" },
-                new Transaction { Account = u1TPBank, Category = c1Personal,      Amount = 150_000,    TransactionDate = D(2025,2,25), Note = "Cắt tóc" },
-                new Transaction { Account = u1VCB,    Category = c1Freelance,     Amount = 2_800_000,  TransactionDate = D(2025,2,28), Note = "Thiết kế UI freelance" },
+                new Transaction { Account = u1VCB,    Category = c1Salary,        BaseAmount = 18_000_000, TransactionDate = D(2025,2,5),  Note = "Lương tháng 2" },
+                new Transaction { Account = u1Cash,   Category = c1Food,          BaseAmount = 65_000,     TransactionDate = D(2025,2,2),  Note = "Ăn sáng bánh mì" },
+                new Transaction { Account = u1Cash,   Category = c1Food,          BaseAmount = 110_000,    TransactionDate = D(2025,2,5),  Note = "Cơm văn phòng" },
+                new Transaction { Account = u1Cash,   Category = c1Food,          BaseAmount = 280_000,    TransactionDate = D(2025,2,14), Note = "Ăn tối Valentine" },
+                new Transaction { Account = u1TPBank, Category = c1Rent,          BaseAmount = 4_500_000,  TransactionDate = D(2025,2,2),  Note = "Tiền thuê nhà T2" },
+                new Transaction { Account = u1TPBank, Category = c1Utilities,     BaseAmount = 320_000,    TransactionDate = D(2025,2,10), Note = "Tiền điện tháng 2" },
+                new Transaction { Account = u1MBBank, Category = c1Health,        BaseAmount = 250_000,    TransactionDate = D(2025,2,8),  Note = "Khám sức khỏe định kỳ" },
+                new Transaction { Account = u1MBBank, Category = c1Health,        BaseAmount = 180_000,    TransactionDate = D(2025,2,9),  Note = "Mua thuốc" },
+                new Transaction { Account = u1TPBank, Category = c1Education,     BaseAmount = 1_200_000,  TransactionDate = D(2025,2,12), Note = "Học phí khóa tiếng Anh" },
+                new Transaction { Account = u1MoMo,   Category = c1Transport,     BaseAmount = 55_000,     TransactionDate = D(2025,2,15), Note = "Grab đi làm" },
+                new Transaction { Account = u1VCB,    Category = c1Shopping,      BaseAmount = 450_000,    TransactionDate = D(2025,2,20), Note = "Mua sách kỹ năng" },
+                new Transaction { Account = u1TPBank, Category = c1Entertainment, BaseAmount = 300_000,    TransactionDate = D(2025,2,22), Note = "Karaoke với đồng nghiệp" },
+                new Transaction { Account = u1TPBank, Category = c1Personal,      BaseAmount = 150_000,    TransactionDate = D(2025,2,25), Note = "Cắt tóc" },
+                new Transaction { Account = u1VCB,    Category = c1Freelance,     BaseAmount = 2_800_000,  TransactionDate = D(2025,2,28), Note = "Thiết kế UI freelance" },
             });
 
             // ---- THÁNG 3 / 2025 ----
             transactions.AddRange(new[]
             {
-                new Transaction { Account = u1VCB,    Category = c1Salary,        Amount = 18_000_000, TransactionDate = D(2025,3,5),  Note = "Lương tháng 3" },
-                new Transaction { Account = u1VCB,    Category = c1Investment,    Amount = 1_500_000,  TransactionDate = D(2025,3,1),  Note = "Cổ tức chứng khoán" },
-                new Transaction { Account = u1Cash,   Category = c1Food,          Amount = 75_000,     TransactionDate = D(2025,3,4),  Note = "Ăn sáng + cà phê" },
-                new Transaction { Account = u1Cash,   Category = c1Food,          Amount = 95_000,     TransactionDate = D(2025,3,7),  Note = "Bữa trưa" },
-                new Transaction { Account = u1Cash,   Category = c1Food,          Amount = 350_000,    TransactionDate = D(2025,3,20), Note = "Tiệc sinh nhật bạn bè" },
-                new Transaction { Account = u1TPBank, Category = c1Rent,          Amount = 4_500_000,  TransactionDate = D(2025,3,2),  Note = "Tiền thuê nhà T3" },
-                new Transaction { Account = u1TPBank, Category = c1Utilities,     Amount = 410_000,    TransactionDate = D(2025,3,10), Note = "Tiền điện + nước T3" },
-                new Transaction { Account = u1TPBank, Category = c1Transport,     Amount = 220_000,    TransactionDate = D(2025,3,14), Note = "Đổ xăng" },
-                new Transaction { Account = u1VCB,    Category = c1Shopping,      Amount = 2_300_000,  TransactionDate = D(2025,3,16), Note = "Mua giày Nike" },
-                new Transaction { Account = u1MBBank, Category = c1Education,     Amount = 1_200_000,  TransactionDate = D(2025,3,12), Note = "Học phí tiếng Anh T3" },
-                new Transaction { Account = u1MBBank, Category = c1Health,        Amount = 350_000,    TransactionDate = D(2025,3,18), Note = "Mua vitamin tổng hợp" },
-                new Transaction { Account = u1TPBank, Category = c1Entertainment, Amount = 250_000,    TransactionDate = D(2025,3,22), Note = "Xem hòa nhạc" },
-                new Transaction { Account = u1MoMo,   Category = c1Food,          Amount = 180_000,    TransactionDate = D(2025,3,25), Note = "Order Grab Food" },
-                new Transaction { Account = u1MoMo,   Category = c1Transport,     Amount = 62_000,     TransactionDate = D(2025,3,27), Note = "Grab đi khám bệnh" },
-                new Transaction { Account = u1VCB,    Category = c1Gift,          Amount = 500_000,    TransactionDate = D(2025,3,8),  Note = "Quà 8/3 cho mẹ" },
+                new Transaction { Account = u1VCB,    Category = c1Salary,        BaseAmount = 18_000_000, TransactionDate = D(2025,3,5),  Note = "Lương tháng 3" },
+                new Transaction { Account = u1VCB,    Category = c1Investment,    BaseAmount = 1_500_000,  TransactionDate = D(2025,3,1),  Note = "Cổ tức chứng khoán" },
+                new Transaction { Account = u1Cash,   Category = c1Food,          BaseAmount = 75_000,     TransactionDate = D(2025,3,4),  Note = "Ăn sáng + cà phê" },
+                new Transaction { Account = u1Cash,   Category = c1Food,          BaseAmount = 95_000,     TransactionDate = D(2025,3,7),  Note = "Bữa trưa" },
+                new Transaction { Account = u1Cash,   Category = c1Food,          BaseAmount = 350_000,    TransactionDate = D(2025,3,20), Note = "Tiệc sinh nhật bạn bè" },
+                new Transaction { Account = u1TPBank, Category = c1Rent,          BaseAmount = 4_500_000,  TransactionDate = D(2025,3,2),  Note = "Tiền thuê nhà T3" },
+                new Transaction { Account = u1TPBank, Category = c1Utilities,     BaseAmount = 410_000,    TransactionDate = D(2025,3,10), Note = "Tiền điện + nước T3" },
+                new Transaction { Account = u1TPBank, Category = c1Transport,     BaseAmount = 220_000,    TransactionDate = D(2025,3,14), Note = "Đổ xăng" },
+                new Transaction { Account = u1VCB,    Category = c1Shopping,      BaseAmount = 2_300_000,  TransactionDate = D(2025,3,16), Note = "Mua giày Nike" },
+                new Transaction { Account = u1MBBank, Category = c1Education,     BaseAmount = 1_200_000,  TransactionDate = D(2025,3,12), Note = "Học phí tiếng Anh T3" },
+                new Transaction { Account = u1MBBank, Category = c1Health,        BaseAmount = 350_000,    TransactionDate = D(2025,3,18), Note = "Mua vitamin tổng hợp" },
+                new Transaction { Account = u1TPBank, Category = c1Entertainment, BaseAmount = 250_000,    TransactionDate = D(2025,3,22), Note = "Xem hòa nhạc" },
+                new Transaction { Account = u1MoMo,   Category = c1Food,          BaseAmount = 180_000,    TransactionDate = D(2025,3,25), Note = "Order Grab Food" },
+                new Transaction { Account = u1MoMo,   Category = c1Transport,     BaseAmount = 62_000,     TransactionDate = D(2025,3,27), Note = "Grab đi khám bệnh" },
+                new Transaction { Account = u1VCB,    Category = c1Gift,          BaseAmount = 500_000,    TransactionDate = D(2025,3,8),  Note = "Quà 8/3 cho mẹ" },
             });
 
             // ---- THÁNG 4 / 2025 ----
             transactions.AddRange(new[]
             {
-                new Transaction { Account = u1VCB,    Category = c1Salary,        Amount = 18_000_000, TransactionDate = D(2025,4,5),  Note = "Lương tháng 4" },
-                new Transaction { Account = u1VCB,    Category = c1Freelance,     Amount = 4_200_000,  TransactionDate = D(2025,4,10), Note = "Dự án app mobile" },
-                new Transaction { Account = u1Cash,   Category = c1Food,          Amount = 60_000,     TransactionDate = D(2025,4,3),  Note = "Ăn sáng" },
-                new Transaction { Account = u1Cash,   Category = c1Food,          Amount = 130_000,    TransactionDate = D(2025,4,8),  Note = "Cơm trưa" },
-                new Transaction { Account = u1Cash,   Category = c1Food,          Amount = 95_000,     TransactionDate = D(2025,4,15), Note = "Bún chả bữa tối" },
-                new Transaction { Account = u1Cash,   Category = c1Food,          Amount = 460_000,    TransactionDate = D(2025,4,25), Note = "Buffet lẩu cuối tuần" },
-                new Transaction { Account = u1TPBank, Category = c1Rent,          Amount = 4_500_000,  TransactionDate = D(2025,4,2),  Note = "Tiền thuê nhà T4" },
-                new Transaction { Account = u1TPBank, Category = c1Utilities,     Amount = 380_000,    TransactionDate = D(2025,4,10), Note = "Điện nước T4" },
-                new Transaction { Account = u1TPBank, Category = c1Transport,     Amount = 215_000,    TransactionDate = D(2025,4,14), Note = "Đổ xăng" },
-                new Transaction { Account = u1VCB,    Category = c1Shopping,      Amount = 1_800_000,  TransactionDate = D(2025,4,18), Note = "Mua tai nghe Sony" },
-                new Transaction { Account = u1MBBank, Category = c1Education,     Amount = 1_200_000,  TransactionDate = D(2025,4,12), Note = "Học phí tiếng Anh T4" },
-                new Transaction { Account = u1TPBank, Category = c1Entertainment, Amount = 150_000,    TransactionDate = D(2025,4,20), Note = "Phim cuối tuần" },
-                new Transaction { Account = u1TPBank, Category = c1Personal,      Amount = 200_000,    TransactionDate = D(2025,4,22), Note = "Chăm sóc da mặt" },
-                new Transaction { Account = u1MoMo,   Category = c1Food,          Amount = 220_000,    TransactionDate = D(2025,4,28), Note = "Order ShopeeFood" },
-                new Transaction { Account = u1VCB,    Category = c1Investment,    Amount = 800_000,    TransactionDate = D(2025,4,30), Note = "Lãi tiết kiệm online" },
+                new Transaction { Account = u1VCB,    Category = c1Salary,        BaseAmount = 18_000_000, TransactionDate = D(2025,4,5),  Note = "Lương tháng 4" },
+                new Transaction { Account = u1VCB,    Category = c1Freelance,     BaseAmount = 4_200_000,  TransactionDate = D(2025,4,10), Note = "Dự án app mobile" },
+                new Transaction { Account = u1Cash,   Category = c1Food,          BaseAmount = 60_000,     TransactionDate = D(2025,4,3),  Note = "Ăn sáng" },
+                new Transaction { Account = u1Cash,   Category = c1Food,          BaseAmount = 130_000,    TransactionDate = D(2025,4,8),  Note = "Cơm trưa" },
+                new Transaction { Account = u1Cash,   Category = c1Food,          BaseAmount = 95_000,     TransactionDate = D(2025,4,15), Note = "Bún chả bữa tối" },
+                new Transaction { Account = u1Cash,   Category = c1Food,          BaseAmount = 460_000,    TransactionDate = D(2025,4,25), Note = "Buffet lẩu cuối tuần" },
+                new Transaction { Account = u1TPBank, Category = c1Rent,          BaseAmount = 4_500_000,  TransactionDate = D(2025,4,2),  Note = "Tiền thuê nhà T4" },
+                new Transaction { Account = u1TPBank, Category = c1Utilities,     BaseAmount = 380_000,    TransactionDate = D(2025,4,10), Note = "Điện nước T4" },
+                new Transaction { Account = u1TPBank, Category = c1Transport,     BaseAmount = 215_000,    TransactionDate = D(2025,4,14), Note = "Đổ xăng" },
+                new Transaction { Account = u1VCB,    Category = c1Shopping,      BaseAmount = 1_800_000,  TransactionDate = D(2025,4,18), Note = "Mua tai nghe Sony" },
+                new Transaction { Account = u1MBBank, Category = c1Education,     BaseAmount = 1_200_000,  TransactionDate = D(2025,4,12), Note = "Học phí tiếng Anh T4" },
+                new Transaction { Account = u1TPBank, Category = c1Entertainment, BaseAmount = 150_000,    TransactionDate = D(2025,4,20), Note = "Phim cuối tuần" },
+                new Transaction { Account = u1TPBank, Category = c1Personal,      BaseAmount = 200_000,    TransactionDate = D(2025,4,22), Note = "Chăm sóc da mặt" },
+                new Transaction { Account = u1MoMo,   Category = c1Food,          BaseAmount = 220_000,    TransactionDate = D(2025,4,28), Note = "Order ShopeeFood" },
+                new Transaction { Account = u1VCB,    Category = c1Investment,    BaseAmount = 800_000,    TransactionDate = D(2025,4,30), Note = "Lãi tiết kiệm online" },
             });
 
             // ---- THÁNG 5 / 2025 ----
             transactions.AddRange(new[]
             {
-                new Transaction { Account = u1VCB,    Category = c1Salary,        Amount = 18_000_000, TransactionDate = D(2025,5,5),  Note = "Lương tháng 5" },
-                new Transaction { Account = u1Cash,   Category = c1Food,          Amount = 70_000,     TransactionDate = D(2025,5,2),  Note = "Ăn sáng hủ tiếu" },
-                new Transaction { Account = u1Cash,   Category = c1Food,          Amount = 115_000,    TransactionDate = D(2025,5,6),  Note = "Cơm bình dân" },
-                new Transaction { Account = u1Cash,   Category = c1Food,          Amount = 390_000,    TransactionDate = D(2025,5,11), Note = "Nhà hàng kỷ niệm" },
-                new Transaction { Account = u1TPBank, Category = c1Rent,          Amount = 4_500_000,  TransactionDate = D(2025,5,2),  Note = "Tiền thuê nhà T5" },
-                new Transaction { Account = u1TPBank, Category = c1Utilities,     Amount = 450_000,    TransactionDate = D(2025,5,10), Note = "Điện nước T5 (mùa hè)" },
-                new Transaction { Account = u1TPBank, Category = c1Transport,     Amount = 240_000,    TransactionDate = D(2025,5,14), Note = "Đổ xăng" },
-                new Transaction { Account = u1VCB,    Category = c1Shopping,      Amount = 3_200_000,  TransactionDate = D(2025,5,18), Note = "Mua bàn phím cơ" },
-                new Transaction { Account = u1MBBank, Category = c1Education,     Amount = 1_200_000,  TransactionDate = D(2025,5,12), Note = "Học phí tiếng Anh T5" },
-                new Transaction { Account = u1MBBank, Category = c1Health,        Amount = 600_000,    TransactionDate = D(2025,5,20), Note = "Khám nha sĩ" },
-                new Transaction { Account = u1TPBank, Category = c1Entertainment, Amount = 450_000,    TransactionDate = D(2025,5,24), Note = "Du lịch Vũng Tàu" },
-                new Transaction { Account = u1MoMo,   Category = c1Transport,     Amount = 75_000,     TransactionDate = D(2025,5,26), Note = "Grab sân bay" },
-                new Transaction { Account = u1VCB,    Category = c1Freelance,     Amount = 5_500_000,  TransactionDate = D(2025,5,28), Note = "Dự án backend API" },
-                new Transaction { Account = u1VCB,    Category = c1Gift,          Amount = 800_000,    TransactionDate = D(2025,5,30), Note = "Quà sinh nhật đồng nghiệp" },
+                new Transaction { Account = u1VCB,    Category = c1Salary,        BaseAmount = 18_000_000, TransactionDate = D(2025,5,5),  Note = "Lương tháng 5" },
+                new Transaction { Account = u1Cash,   Category = c1Food,          BaseAmount = 70_000,     TransactionDate = D(2025,5,2),  Note = "Ăn sáng hủ tiếu" },
+                new Transaction { Account = u1Cash,   Category = c1Food,          BaseAmount = 115_000,    TransactionDate = D(2025,5,6),  Note = "Cơm bình dân" },
+                new Transaction { Account = u1Cash,   Category = c1Food,          BaseAmount = 390_000,    TransactionDate = D(2025,5,11), Note = "Nhà hàng kỷ niệm" },
+                new Transaction { Account = u1TPBank, Category = c1Rent,          BaseAmount = 4_500_000,  TransactionDate = D(2025,5,2),  Note = "Tiền thuê nhà T5" },
+                new Transaction { Account = u1TPBank, Category = c1Utilities,     BaseAmount = 450_000,    TransactionDate = D(2025,5,10), Note = "Điện nước T5 (mùa hè)" },
+                new Transaction { Account = u1TPBank, Category = c1Transport,     BaseAmount = 240_000,    TransactionDate = D(2025,5,14), Note = "Đổ xăng" },
+                new Transaction { Account = u1VCB,    Category = c1Shopping,      BaseAmount = 3_200_000,  TransactionDate = D(2025,5,18), Note = "Mua bàn phím cơ" },
+                new Transaction { Account = u1MBBank, Category = c1Education,     BaseAmount = 1_200_000,  TransactionDate = D(2025,5,12), Note = "Học phí tiếng Anh T5" },
+                new Transaction { Account = u1MBBank, Category = c1Health,        BaseAmount = 600_000,    TransactionDate = D(2025,5,20), Note = "Khám nha sĩ" },
+                new Transaction { Account = u1TPBank, Category = c1Entertainment, BaseAmount = 450_000,    TransactionDate = D(2025,5,24), Note = "Du lịch Vũng Tàu" },
+                new Transaction { Account = u1MoMo,   Category = c1Transport,     BaseAmount = 75_000,     TransactionDate = D(2025,5,26), Note = "Grab sân bay" },
+                new Transaction { Account = u1VCB,    Category = c1Freelance,     BaseAmount = 5_500_000,  TransactionDate = D(2025,5,28), Note = "Dự án backend API" },
+                new Transaction { Account = u1VCB,    Category = c1Gift,          BaseAmount = 800_000,    TransactionDate = D(2025,5,30), Note = "Quà sinh nhật đồng nghiệp" },
             });
 
             // ---- THÁNG 6 / 2025 ----
             transactions.AddRange(new[]
             {
-                new Transaction { Account = u1VCB,    Category = c1Salary,        Amount = 20_000_000, TransactionDate = D(2025,6,5),  Note = "Lương T6 (tăng lương)" },
-                new Transaction { Account = u1VCB,    Category = c1Bonus,         Amount = 3_000_000,  TransactionDate = D(2025,6,5),  Note = "Thưởng KPI Q2" },
-                new Transaction { Account = u1Cash,   Category = c1Food,          Amount = 80_000,     TransactionDate = D(2025,6,3),  Note = "Ăn sáng" },
-                new Transaction { Account = u1Cash,   Category = c1Food,          Amount = 145_000,    TransactionDate = D(2025,6,8),  Note = "Cơm + trà sữa" },
-                new Transaction { Account = u1Cash,   Category = c1Food,          Amount = 520_000,    TransactionDate = D(2025,6,15), Note = "Tiệc liên hoan tăng lương" },
-                new Transaction { Account = u1TPBank, Category = c1Rent,          Amount = 4_500_000,  TransactionDate = D(2025,6,2),  Note = "Tiền thuê nhà T6" },
-                new Transaction { Account = u1TPBank, Category = c1Utilities,     Amount = 520_000,    TransactionDate = D(2025,6,10), Note = "Điện nước T6" },
-                new Transaction { Account = u1TPBank, Category = c1Transport,     Amount = 230_000,    TransactionDate = D(2025,6,13), Note = "Đổ xăng" },
-                new Transaction { Account = u1VCB,    Category = c1Shopping,      Amount = 5_500_000,  TransactionDate = D(2025,6,20), Note = "Mua điện thoại Samsung A55" },
-                new Transaction { Account = u1MBBank, Category = c1Education,     Amount = 2_500_000,  TransactionDate = D(2025,6,12), Note = "Đăng ký khóa học Udemy" },
-                new Transaction { Account = u1TPBank, Category = c1Entertainment, Amount = 800_000,    TransactionDate = D(2025,6,22), Note = "Đi Đà Lạt 1 ngày" },
-                new Transaction { Account = u1MoMo,   Category = c1Food,          Amount = 195_000,    TransactionDate = D(2025,6,25), Note = "Order Baemin" },
-                new Transaction { Account = u1VCB,    Category = c1Investment,    Amount = 2_000_000,  TransactionDate = D(2025,6,28), Note = "Lợi nhuận chứng khoán tháng 6" },
-                new Transaction { Account = u1TPBank, Category = c1Personal,      Amount = 350_000,    TransactionDate = D(2025,6,28), Note = "Mua nước hoa" },
-                new Transaction { Account = u1VCB,    Category = c1Other,         Amount = 1_000_000,  TransactionDate = D(2025,6,30), Note = "Hoàn tiền bảo hiểm" },
+                new Transaction { Account = u1VCB,    Category = c1Salary,        BaseAmount = 20_000_000, TransactionDate = D(2025,6,5),  Note = "Lương T6 (tăng lương)" },
+                new Transaction { Account = u1VCB,    Category = c1Bonus,         BaseAmount = 3_000_000,  TransactionDate = D(2025,6,5),  Note = "Thưởng KPI Q2" },
+                new Transaction { Account = u1Cash,   Category = c1Food,          BaseAmount = 80_000,     TransactionDate = D(2025,6,3),  Note = "Ăn sáng" },
+                new Transaction { Account = u1Cash,   Category = c1Food,          BaseAmount = 145_000,    TransactionDate = D(2025,6,8),  Note = "Cơm + trà sữa" },
+                new Transaction { Account = u1Cash,   Category = c1Food,          BaseAmount = 520_000,    TransactionDate = D(2025,6,15), Note = "Tiệc liên hoan tăng lương" },
+                new Transaction { Account = u1TPBank, Category = c1Rent,          BaseAmount = 4_500_000,  TransactionDate = D(2025,6,2),  Note = "Tiền thuê nhà T6" },
+                new Transaction { Account = u1TPBank, Category = c1Utilities,     BaseAmount = 520_000,    TransactionDate = D(2025,6,10), Note = "Điện nước T6" },
+                new Transaction { Account = u1TPBank, Category = c1Transport,     BaseAmount = 230_000,    TransactionDate = D(2025,6,13), Note = "Đổ xăng" },
+                new Transaction { Account = u1VCB,    Category = c1Shopping,      BaseAmount = 5_500_000,  TransactionDate = D(2025,6,20), Note = "Mua điện thoại Samsung A55" },
+                new Transaction { Account = u1MBBank, Category = c1Education,     BaseAmount = 2_500_000,  TransactionDate = D(2025,6,12), Note = "Đăng ký khóa học Udemy" },
+                new Transaction { Account = u1TPBank, Category = c1Entertainment, BaseAmount = 800_000,    TransactionDate = D(2025,6,22), Note = "Đi Đà Lạt 1 ngày" },
+                new Transaction { Account = u1MoMo,   Category = c1Food,          BaseAmount = 195_000,    TransactionDate = D(2025,6,25), Note = "Order Baemin" },
+                new Transaction { Account = u1VCB,    Category = c1Investment,    BaseAmount = 2_000_000,  TransactionDate = D(2025,6,28), Note = "Lợi nhuận chứng khoán tháng 6" },
+                new Transaction { Account = u1TPBank, Category = c1Personal,      BaseAmount = 350_000,    TransactionDate = D(2025,6,28), Note = "Mua nước hoa" },
+                new Transaction { Account = u1VCB,    Category = c1Other,         BaseAmount = 1_000_000,  TransactionDate = D(2025,6,30), Note = "Hoàn tiền bảo hiểm" },
             });
 
             // ================================================================
@@ -402,25 +402,25 @@ namespace SE114_MoneyApp_BE.Data
             // ================================================================
             transactions.AddRange(new[]
             {
-                new Transaction { Account = u2Techcombank, Category = c2Salary,   Amount = 12_000_000, TransactionDate = D(2025,3,3),  Note = "Lương tháng 3" },
-                new Transaction { Account = u2Cash,        Category = c2Food,     Amount = 80_000,     TransactionDate = D(2025,3,5),  Note = "Ăn sáng + cà phê" },
-                new Transaction { Account = u2Cash,        Category = c2Food,     Amount = 150_000,    TransactionDate = D(2025,3,10), Note = "Cơm trưa + tráng miệng" },
-                new Transaction { Account = u2Techcombank, Category = c2Shopping, Amount = 1_500_000,  TransactionDate = D(2025,3,15), Note = "Mua đồ gia dụng" },
-                new Transaction { Account = u2ZaloPay,     Category = c2Transport,Amount = 35_000,     TransactionDate = D(2025,3,18), Note = "Grab di chuyển" },
+                new Transaction { Account = u2Techcombank, Category = c2Salary,   BaseAmount = 12_000_000, TransactionDate = D(2025,3,3),  Note = "Lương tháng 3" },
+                new Transaction { Account = u2Cash,        Category = c2Food,     BaseAmount = 80_000,     TransactionDate = D(2025,3,5),  Note = "Ăn sáng + cà phê" },
+                new Transaction { Account = u2Cash,        Category = c2Food,     BaseAmount = 150_000,    TransactionDate = D(2025,3,10), Note = "Cơm trưa + tráng miệng" },
+                new Transaction { Account = u2Techcombank, Category = c2Shopping, BaseAmount = 1_500_000,  TransactionDate = D(2025,3,15), Note = "Mua đồ gia dụng" },
+                new Transaction { Account = u2ZaloPay,     Category = c2Transport,BaseAmount = 35_000,     TransactionDate = D(2025,3,18), Note = "Grab di chuyển" },
 
-                new Transaction { Account = u2Techcombank, Category = c2Salary,   Amount = 12_000_000, TransactionDate = D(2025,4,3),  Note = "Lương tháng 4" },
-                new Transaction { Account = u2Techcombank, Category = c2SideJob,  Amount = 2_500_000,  TransactionDate = D(2025,4,20), Note = "Dạy gia sư" },
-                new Transaction { Account = u2Cash,        Category = c2Food,     Amount = 95_000,     TransactionDate = D(2025,4,6),  Note = "Bữa trưa" },
-                new Transaction { Account = u2Techcombank, Category = c2Shopping, Amount = 800_000,    TransactionDate = D(2025,4,25), Note = "Mua mỹ phẩm" },
-                new Transaction { Account = u2ZaloPay,     Category = c2Transport,Amount = 48_000,     TransactionDate = D(2025,4,28), Note = "Grab về nhà" },
+                new Transaction { Account = u2Techcombank, Category = c2Salary,   BaseAmount = 12_000_000, TransactionDate = D(2025,4,3),  Note = "Lương tháng 4" },
+                new Transaction { Account = u2Techcombank, Category = c2SideJob,  BaseAmount = 2_500_000,  TransactionDate = D(2025,4,20), Note = "Dạy gia sư" },
+                new Transaction { Account = u2Cash,        Category = c2Food,     BaseAmount = 95_000,     TransactionDate = D(2025,4,6),  Note = "Bữa trưa" },
+                new Transaction { Account = u2Techcombank, Category = c2Shopping, BaseAmount = 800_000,    TransactionDate = D(2025,4,25), Note = "Mua mỹ phẩm" },
+                new Transaction { Account = u2ZaloPay,     Category = c2Transport,BaseAmount = 48_000,     TransactionDate = D(2025,4,28), Note = "Grab về nhà" },
 
-                new Transaction { Account = u2Techcombank, Category = c2Salary,   Amount = 12_000_000, TransactionDate = D(2025,5,3),  Note = "Lương tháng 5" },
-                new Transaction { Account = u2Cash,        Category = c2Food,     Amount = 120_000,    TransactionDate = D(2025,5,7),  Note = "Ăn uống" },
-                new Transaction { Account = u2Techcombank, Category = c2Shopping, Amount = 2_200_000,  TransactionDate = D(2025,5,15), Note = "Mua đồ thể thao" },
+                new Transaction { Account = u2Techcombank, Category = c2Salary,   BaseAmount = 12_000_000, TransactionDate = D(2025,5,3),  Note = "Lương tháng 5" },
+                new Transaction { Account = u2Cash,        Category = c2Food,     BaseAmount = 120_000,    TransactionDate = D(2025,5,7),  Note = "Ăn uống" },
+                new Transaction { Account = u2Techcombank, Category = c2Shopping, BaseAmount = 2_200_000,  TransactionDate = D(2025,5,15), Note = "Mua đồ thể thao" },
 
-                new Transaction { Account = u2Techcombank, Category = c2Salary,   Amount = 12_000_000, TransactionDate = D(2025,6,3),  Note = "Lương tháng 6" },
-                new Transaction { Account = u2Techcombank, Category = c2SideJob,  Amount = 3_000_000,  TransactionDate = D(2025,6,18), Note = "Gia sư tháng 6" },
-                new Transaction { Account = u2Cash,        Category = c2Food,     Amount = 200_000,    TransactionDate = D(2025,6,20), Note = "Tiệc cuối tháng" },
+                new Transaction { Account = u2Techcombank, Category = c2Salary,   BaseAmount = 12_000_000, TransactionDate = D(2025,6,3),  Note = "Lương tháng 6" },
+                new Transaction { Account = u2Techcombank, Category = c2SideJob,  BaseAmount = 3_000_000,  TransactionDate = D(2025,6,18), Note = "Gia sư tháng 6" },
+                new Transaction { Account = u2Cash,        Category = c2Food,     BaseAmount = 200_000,    TransactionDate = D(2025,6,20), Note = "Tiệc cuối tháng" },
             });
 
             // ================================================================
@@ -428,11 +428,11 @@ namespace SE114_MoneyApp_BE.Data
             // ================================================================
             transactions.AddRange(new[]
             {
-                new Transaction { Account = u3VietinBank, Category = c3Salary, Amount = 8_000_000, TransactionDate = D(2025,5,5),  Note = "Lương đầu tháng 5" },
-                new Transaction { Account = u3Cash,       Category = c3Food,   Amount = 50_000,    TransactionDate = D(2025,5,6),  Note = "Ăn sáng" },
-                new Transaction { Account = u3Cash,       Category = c3Food,   Amount = 90_000,    TransactionDate = D(2025,5,12), Note = "Bữa trưa" },
-                new Transaction { Account = u3VietinBank, Category = c3Salary, Amount = 8_000_000, TransactionDate = D(2025,6,5),  Note = "Lương tháng 6" },
-                new Transaction { Account = u3Cash,       Category = c3Food,   Amount = 75_000,    TransactionDate = D(2025,6,8),  Note = "Ăn sáng + nước" },
+                new Transaction { Account = u3VietinBank, Category = c3Salary, BaseAmount = 8_000_000, TransactionDate = D(2025,5,5),  Note = "Lương đầu tháng 5" },
+                new Transaction { Account = u3Cash,       Category = c3Food,   BaseAmount = 50_000,    TransactionDate = D(2025,5,6),  Note = "Ăn sáng" },
+                new Transaction { Account = u3Cash,       Category = c3Food,   BaseAmount = 90_000,    TransactionDate = D(2025,5,12), Note = "Bữa trưa" },
+                new Transaction { Account = u3VietinBank, Category = c3Salary, BaseAmount = 8_000_000, TransactionDate = D(2025,6,5),  Note = "Lương tháng 6" },
+                new Transaction { Account = u3Cash,       Category = c3Food,   BaseAmount = 75_000,    TransactionDate = D(2025,6,8),  Note = "Ăn sáng + nước" },
             });
 
             context.Transactions.AddRange(transactions);
@@ -443,43 +443,43 @@ namespace SE114_MoneyApp_BE.Data
             var transfers = new List<Transfer>
             {
                 // T1: Rút tiền mặt từ TPBank
-                new Transfer { Source = u1TPBank, Destination = u1Cash,    Amount = 2_000_000, TransferDate = D(2025,1,6),  Description = "Rút tiền mặt tiêu Tết" },
+                new Transfer { Source = u1TPBank, Destination = u1Cash,    SourceAmount = 2_000_000, TransferDate = D(2025,1,6),  Description = "Rút tiền mặt tiêu Tết" },
                 // T1: Nạp MoMo từ VCB
-                new Transfer { Source = u1VCB,    Destination = u1MoMo,    Amount = 500_000,   TransferDate = D(2025,1,10), Description = "Nạp ví MoMo" },
+                new Transfer { Source = u1VCB,    Destination = u1MoMo,    SourceAmount = 500_000,   TransferDate = D(2025,1,10), Description = "Nạp ví MoMo" },
 
                 // T2: Rút tiền mặt
-                new Transfer { Source = u1VCB,    Destination = u1Cash,    Amount = 1_000_000, TransferDate = D(2025,2,3),  Description = "Rút tiền mặt tiêu vặt" },
+                new Transfer { Source = u1VCB,    Destination = u1Cash,    SourceAmount = 1_000_000, TransferDate = D(2025,2,3),  Description = "Rút tiền mặt tiêu vặt" },
                 // T2: Nạp MoMo
-                new Transfer { Source = u1TPBank, Destination = u1MoMo,    Amount = 300_000,   TransferDate = D(2025,2,20), Description = "Nạp MoMo đặt đồ ăn" },
+                new Transfer { Source = u1TPBank, Destination = u1MoMo,    SourceAmount = 300_000,   TransferDate = D(2025,2,20), Description = "Nạp MoMo đặt đồ ăn" },
 
                 // T3: Gửi tiết kiệm
-                new Transfer { Source = u1VCB,    Destination = u1Savings, Amount = 5_000_000, TransferDate = D(2025,3,6),  Description = "Gửi tiết kiệm tháng 3" },
+                new Transfer { Source = u1VCB,    Destination = u1Savings, SourceAmount = 5_000_000, TransferDate = D(2025,3,6),  Description = "Gửi tiết kiệm tháng 3" },
                 // T3: Rút tiền mặt
-                new Transfer { Source = u1TPBank, Destination = u1Cash,    Amount = 800_000,   TransferDate = D(2025,3,15), Description = "Rút tiền mặt" },
+                new Transfer { Source = u1TPBank, Destination = u1Cash,    SourceAmount = 800_000,   TransferDate = D(2025,3,15), Description = "Rút tiền mặt" },
 
                 // T4: Rút MBBank về tiền mặt
-                new Transfer { Source = u1MBBank, Destination = u1Cash,    Amount = 500_000,   TransferDate = D(2025,4,5),  Description = "Rút MBBank tiêu vặt" },
+                new Transfer { Source = u1MBBank, Destination = u1Cash,    SourceAmount = 500_000,   TransferDate = D(2025,4,5),  Description = "Rút MBBank tiêu vặt" },
                 // T4: Nạp MoMo từ TPBank
-                new Transfer { Source = u1TPBank, Destination = u1MoMo,    Amount = 400_000,   TransferDate = D(2025,4,22), Description = "Nạp MoMo order đồ ăn" },
+                new Transfer { Source = u1TPBank, Destination = u1MoMo,    SourceAmount = 400_000,   TransferDate = D(2025,4,22), Description = "Nạp MoMo order đồ ăn" },
                 // T4: Gửi tiết kiệm
-                new Transfer { Source = u1VCB,    Destination = u1Savings, Amount = 5_000_000, TransferDate = D(2025,4,30), Description = "Gửi tiết kiệm tháng 4" },
+                new Transfer { Source = u1VCB,    Destination = u1Savings, SourceAmount = 5_000_000, TransferDate = D(2025,4,30), Description = "Gửi tiết kiệm tháng 4" },
 
                 // T5: Rút tiền
-                new Transfer { Source = u1VCB,    Destination = u1Cash,    Amount = 1_500_000, TransferDate = D(2025,5,3),  Description = "Rút tiền mặt tháng 5" },
+                new Transfer { Source = u1VCB,    Destination = u1Cash,    SourceAmount = 1_500_000, TransferDate = D(2025,5,3),  Description = "Rút tiền mặt tháng 5" },
                 // T5: Gửi tiết kiệm
-                new Transfer { Source = u1VCB,    Destination = u1Savings, Amount = 5_000_000, TransferDate = D(2025,5,31), Description = "Gửi tiết kiệm tháng 5" },
+                new Transfer { Source = u1VCB,    Destination = u1Savings, SourceAmount = 5_000_000, TransferDate = D(2025,5,31), Description = "Gửi tiết kiệm tháng 5" },
 
                 // T6: Gửi tiết kiệm lớn sau tăng lương
-                new Transfer { Source = u1VCB,    Destination = u1Savings, Amount = 8_000_000, TransferDate = D(2025,6,6),  Description = "Gửi tiết kiệm tháng 6" },
+                new Transfer { Source = u1VCB,    Destination = u1Savings, SourceAmount = 8_000_000, TransferDate = D(2025,6,6),  Description = "Gửi tiết kiệm tháng 6" },
                 // T6: Nạp MoMo
-                new Transfer { Source = u1TPBank, Destination = u1MoMo,    Amount = 500_000,   TransferDate = D(2025,6,20), Description = "Nạp ví MoMo tháng 6" },
+                new Transfer { Source = u1TPBank, Destination = u1MoMo,    SourceAmount = 500_000,   TransferDate = D(2025,6,20), Description = "Nạp ví MoMo tháng 6" },
 
                 // User 2: chuyển từ Techcombank sang ZaloPay
-                new Transfer { Source = u2Techcombank, Destination = u2ZaloPay, Amount = 200_000, TransferDate = D(2025,4,10), Description = "Nạp ZaloPay" },
-                new Transfer { Source = u2Techcombank, Destination = u2Cash,    Amount = 500_000, TransferDate = D(2025,5,20), Description = "Rút tiền mặt" },
+                new Transfer { Source = u2Techcombank, Destination = u2ZaloPay, SourceAmount = 200_000, TransferDate = D(2025,4,10), Description = "Nạp ZaloPay" },
+                new Transfer { Source = u2Techcombank, Destination = u2Cash,    SourceAmount = 500_000, TransferDate = D(2025,5,20), Description = "Rút tiền mặt" },
 
                 // User 3: chuyển nhỏ
-                new Transfer { Source = u3VietinBank, Destination = u3Cash, Amount = 300_000, TransferDate = D(2025,5,10), Description = "Rút tiền tiêu vặt" },
+                new Transfer { Source = u3VietinBank, Destination = u3Cash, SourceAmount = 300_000, TransferDate = D(2025,5,10), Description = "Rút tiền tiêu vặt" },
             };
             context.Transfers.AddRange(transfers);
 
@@ -611,35 +611,35 @@ namespace SE114_MoneyApp_BE.Data
             // ---- THÁNG 4 / 2026 ----
             transactions.AddRange(new[]
             {
-        new Transaction { Account = accBank, Category = catSalary,   Amount = 20_000_000, TransactionDate = D(2026,4,5),  Note = "Lương tháng 4" },
-        new Transaction { Account = accBank, Category = catRent,     Amount = 5_000_000,  TransactionDate = D(2026,4,2),  Note = "Tiền nhà T4" },
-        new Transaction { Account = accCash, Category = catFood,     Amount = 150_000,    TransactionDate = D(2026,4,10), Note = "Cơm trưa" },
-        new Transaction { Account = accCash, Category = catFood,     Amount = 350_000,    TransactionDate = D(2026,4,15), Note = "Ăn lẩu cuối tuần" },
-        new Transaction { Account = accBank, Category = catShopping, Amount = 1_200_000,  TransactionDate = D(2026,4,20), Note = "Mua giày thể thao" },
-        new Transaction { Account = accCash, Category = catFood,     Amount = 80_000,     TransactionDate = D(2026,4,28)  /* Test UI không Note */ },
+        new Transaction { Account = accBank, Category = catSalary,   BaseAmount = 20_000_000, TransactionDate = D(2026,4,5),  Note = "Lương tháng 4" },
+        new Transaction { Account = accBank, Category = catRent,     BaseAmount = 5_000_000,  TransactionDate = D(2026,4,2),  Note = "Tiền nhà T4" },
+        new Transaction { Account = accCash, Category = catFood,     BaseAmount = 150_000,    TransactionDate = D(2026,4,10), Note = "Cơm trưa" },
+        new Transaction { Account = accCash, Category = catFood,     BaseAmount = 350_000,    TransactionDate = D(2026,4,15), Note = "Ăn lẩu cuối tuần" },
+        new Transaction { Account = accBank, Category = catShopping, BaseAmount = 1_200_000,  TransactionDate = D(2026,4,20), Note = "Mua giày thể thao" },
+        new Transaction { Account = accCash, Category = catFood,     BaseAmount = 80_000,     TransactionDate = D(2026,4,28)  /* Test UI không Note */ },
     });
 
             // ---- THÁNG 5 / 2026 ----
             transactions.AddRange(new[]
             {
-        new Transaction { Account = accBank, Category = catSalary,   Amount = 20_000_000, TransactionDate = D(2026,5,5),  Note = "Lương tháng 5" },
-        new Transaction { Account = accBank, Category = catBonus,    Amount = 3_000_000,  TransactionDate = D(2026,5,5),  Note = "Thưởng lễ 30/4" },
-        new Transaction { Account = accBank, Category = catRent,     Amount = 5_000_000,  TransactionDate = D(2026,5,2),  Note = "Tiền nhà T5" },
-        new Transaction { Account = accCash, Category = catFood,     Amount = 120_000,    TransactionDate = D(2026,5,8),  Note = "Bữa trưa" },
-        new Transaction { Account = accCash, Category = catFood,     Amount = 45_000,     TransactionDate = D(2026,5,14)  /* Test UI không Note */ },
-        new Transaction { Account = accBank, Category = catShopping, Amount = 2_500_000,  TransactionDate = D(2026,5,22), Note = "Mua tai nghe" },
-        new Transaction { Account = accCash, Category = catFood,     Amount = 600_000,    TransactionDate = D(2026,5,28), Note = "Đi ăn buffet" },
+        new Transaction { Account = accBank, Category = catSalary,   BaseAmount = 20_000_000, TransactionDate = D(2026,5,5),  Note = "Lương tháng 5" },
+        new Transaction { Account = accBank, Category = catBonus,    BaseAmount = 3_000_000,  TransactionDate = D(2026,5,5),  Note = "Thưởng lễ 30/4" },
+        new Transaction { Account = accBank, Category = catRent,     BaseAmount = 5_000_000,  TransactionDate = D(2026,5,2),  Note = "Tiền nhà T5" },
+        new Transaction { Account = accCash, Category = catFood,     BaseAmount = 120_000,    TransactionDate = D(2026,5,8),  Note = "Bữa trưa" },
+        new Transaction { Account = accCash, Category = catFood,     BaseAmount = 45_000,     TransactionDate = D(2026,5,14)  /* Test UI không Note */ },
+        new Transaction { Account = accBank, Category = catShopping, BaseAmount = 2_500_000,  TransactionDate = D(2026,5,22), Note = "Mua tai nghe" },
+        new Transaction { Account = accCash, Category = catFood,     BaseAmount = 600_000,    TransactionDate = D(2026,5,28), Note = "Đi ăn buffet" },
     });
 
             // ---- THÁNG 6 / 2026 (Từ mùng 1 đến mùng 8) ----
             transactions.AddRange(new[]
             {
-        new Transaction { Account = accBank, Category = catRent,     Amount = 5_000_000,  TransactionDate = D(2026,6,2),  Note = "Tiền nhà T6" },
-        new Transaction { Account = accCash, Category = catFood,     Amount = 55_000,     TransactionDate = D(2026,6,3),  Note = "Ăn sáng" },
-        new Transaction { Account = accBank, Category = catSalary,   Amount = 20_000_000, TransactionDate = D(2026,6,5),  Note = "Lương tháng 6" },
-        new Transaction { Account = accCash, Category = catFood,     Amount = 200_000,    TransactionDate = D(2026,6,6)   /* Test UI không Note */ },
-        new Transaction { Account = accBank, Category = catShopping, Amount = 800_000,    TransactionDate = D(2026,6,7),  Note = "Mua quà tặng" },
-        new Transaction { Account = accCash, Category = catFood,     Amount = 350_000,    TransactionDate = D(2026,6,8),  Note = "Cà phê hôm nay" },
+        new Transaction { Account = accBank, Category = catRent,     BaseAmount = 5_000_000,  TransactionDate = D(2026,6,2),  Note = "Tiền nhà T6" },
+        new Transaction { Account = accCash, Category = catFood,     BaseAmount = 55_000,     TransactionDate = D(2026,6,3),  Note = "Ăn sáng" },
+        new Transaction { Account = accBank, Category = catSalary,   BaseAmount = 20_000_000, TransactionDate = D(2026,6,5),  Note = "Lương tháng 6" },
+        new Transaction { Account = accCash, Category = catFood,     BaseAmount = 200_000,    TransactionDate = D(2026,6,6)   /* Test UI không Note */ },
+        new Transaction { Account = accBank, Category = catShopping, BaseAmount = 800_000,    TransactionDate = D(2026,6,7),  Note = "Mua quà tặng" },
+        new Transaction { Account = accCash, Category = catFood,     BaseAmount = 350_000,    TransactionDate = D(2026,6,8),  Note = "Cà phê hôm nay" },
     });
 
             context.Transactions.AddRange(transactions);

@@ -28,10 +28,7 @@ namespace SE114_MoneyApp_BE.Controllers
             [FromQuery] Guid? accountId)
         {
             var (userId, success, message) = GetCurrentUserId();
-            if (!success)
-            {
-                return Unauthorized(new { Message = message });
-            }
+            if (!success) return Unauthorized(new { Message = message });
 
             var query = _context.AdjustBalances
                 .Include(ab => ab.Account)
@@ -39,14 +36,10 @@ namespace SE114_MoneyApp_BE.Controllers
                 .AsQueryable();
 
             if (accountId.HasValue)
-            {
                 query = query.Where(ab => ab.AccountId == accountId.Value);
-            }
 
             if (startDate.HasValue)
-            {
                 query = query.Where(ab => ab.CreatedAt >= startDate.Value.Date);
-            }
 
             if (endDate.HasValue)
             {
@@ -61,6 +54,7 @@ namespace SE114_MoneyApp_BE.Controllers
                     Id = ab.Id,
                     AccountId = ab.AccountId,
                     AccountName = ab.Account!.AccountName,
+                    CurrencyCode = ab.Account.CurrencyCode, // MAP TIỀN TỆ TỪ BẢNG ACCOUNT
                     Amount = ab.Amount,
                     CreatedAt = DateTime.SpecifyKind(ab.CreatedAt, DateTimeKind.Utc)
                 })
@@ -79,29 +73,22 @@ namespace SE114_MoneyApp_BE.Controllers
         public async Task<IActionResult> CreateAdjustBalance([FromBody] AdjustBalanceRequest request)
         {
             var (userId, success, message) = GetCurrentUserId();
-            if (!success)
-            {
-                return Unauthorized(new { Message = message });
-            }
+            if (!success) return Unauthorized(new { Message = message });
 
             var account = await _context.Accounts
                 .Where(a => a.Id == request.AccountId && a.UserId == userId && a.IsActive)
                 .FirstOrDefaultAsync();
 
-            if (account == null)
-            {
-                return NotFound(new
-                {
-                    Message = "Không tìm thấy tài khoản."
-                });
-            }
+            if (account == null) return NotFound(new { Message = "Không tìm thấy tài khoản." });
 
             var newAdjustBalance = new AdjustBalance
             {
                 AccountId = request.AccountId,
                 Amount = request.Amount
             };
+
             _context.AdjustBalances.Add(newAdjustBalance);
+
             account.Balance += request.Amount;
 
             await _context.SaveChangesAsync();
@@ -110,7 +97,8 @@ namespace SE114_MoneyApp_BE.Controllers
             {
                 Message = "Điều chỉnh số dư thành công.",
                 AdjustBalanceId = newAdjustBalance.Id,
-                NewBalance = account.Balance
+                NewBalance = account.Balance,
+                CurrencyCode = account.CurrencyCode // Tiện thể trả về luôn cho FE đỡ phải hỏi lại
             });
         }
     }

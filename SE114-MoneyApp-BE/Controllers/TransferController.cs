@@ -20,11 +20,18 @@ namespace SE114_MoneyApp_BE.Controllers
             SourceAccountName = t.Source!.AccountName,
             SourceAccountColorId = t.Source!.ColorId,
             SourceAccountIconId = t.Source!.IconId,
+
             DestinationAccount = t.DestinationAccountId,
             DestinationAccountName = t.Destination!.AccountName,
             DestinationAccountColorId = t.Destination!.ColorId,
             DestinationAccountIconId = t.Destination!.IconId,
-            Amount = t.Amount,
+
+            SourceAmount = t.SourceAmount,
+            DestinationAmount = t.DestinationAmount,
+            BaseAmount = t.BaseAmount,
+            SourceExchangeRate = t.SourceExchangeRate,
+            DestinationExchangeRate = t.DestinationExchangeRate,
+
             TransferDate = DateTime.SpecifyKind(t.TransferDate, DateTimeKind.Utc),
             Description = t.Description,
             CreatedAt = DateTime.SpecifyKind(t.CreatedAt, DateTimeKind.Utc),
@@ -134,66 +141,48 @@ namespace SE114_MoneyApp_BE.Controllers
         public async Task<IActionResult> CreateTransfer([FromBody] TransferRequest request)
         {
             var (userId, success, message) = GetCurrentUserId();
-            if (!success)
-            {
-                return Unauthorized(new
-                {
-                    Message = message
-                });
-            }
-            
-            // Kiểm tra tài khoản nguồn và đích
+            if (!success) return Unauthorized(new { Message = message });
+
             if (request.SourceAccountId == request.DestinationAccountId)
-            {
-                return BadRequest(new
-                {
-                    Message = "Tài khoản trùng nhau"
-                });
-            }
+                return BadRequest(new { Message = "Tài khoản trùng nhau" });
+
             var sourceAccount = await _context.Accounts.FindAsync(request.SourceAccountId);
             var destinationAccount = await _context.Accounts.FindAsync(request.DestinationAccountId);
+
             if (sourceAccount == null || destinationAccount == null)
-            {
-                return BadRequest(new
-                {
-                    Message = "Tài khoản nguồn hoặc tài khoản đích không tồn tại"
-                });
-            }
-            if (sourceAccount.UserId != destinationAccount.UserId)
-            {
-                return BadRequest(new
-                {
-                    Message = "Tài khoản nguồn và tài khoản đích phải thuộc cùng một người dùng"
-                });
-            }
-            if (sourceAccount.UserId != userId)
-            {
-                return BadRequest(new
-                {
-                    Message = "Bạn không có quyền sử dụng tài khoản nguồn hoặc tài khoản đích"
-                });
-            }
+                return BadRequest(new { Message = "Tài khoản không tồn tại" });
+
+            if (sourceAccount.UserId != userId || destinationAccount.UserId != userId)
+                return BadRequest(new { Message = "Tài khoản không hợp lệ" });
+
+            var absSourceAmount = Math.Abs(request.SourceAmount);
+            var absDestAmount = Math.Abs(request.DestinationAmount);
 
             var transfer = new Transfer
             {
                 SourceAccountId = request.SourceAccountId,
                 DestinationAccountId = request.DestinationAccountId,
-                Amount = request.Amount,
+
+                SourceAmount = absSourceAmount,
+                DestinationAmount = absDestAmount,
+                BaseAmount = Math.Abs(request.BaseAmount),
+                SourceExchangeRate = request.SourceExchangeRate > 0 ? request.SourceExchangeRate : 1.0,
+                DestinationExchangeRate = request.DestinationExchangeRate > 0 ? request.DestinationExchangeRate : 1.0,
+
                 TransferDate = request.TransferDate.Date.ToUniversalTime(),
-                Description = request.Description
+                Description = request.Description,
+                CreatedAt = DateTime.UtcNow,
+                LastUpdatedAt = DateTime.UtcNow
             };
 
-            sourceAccount.Balance -= request.Amount;
-            destinationAccount.Balance += request.Amount;
+            // Trừ ví nguồn (dùng SourceAmount), Cộng ví đích (dùng DestinationAmount)
+            sourceAccount.Balance -= absSourceAmount;
+            destinationAccount.Balance += absDestAmount;
 
             _context.Transfers.Add(transfer);
             await _context.SaveChangesAsync();
 
-            return Ok(new
-            {
-                Message = "Chuyển khoản thành công",
-                TransferId = transfer.Id
-            });
+            return Ok(new { Message = "Chuyển khoản thành công", TransferId = transfer.Id });
         }
 
         // PUT: api/Transfer/{id}
@@ -209,7 +198,6 @@ namespace SE114_MoneyApp_BE.Controllers
             var (userId, success, message) = GetCurrentUserId();
             if (!success) return Unauthorized(new { Message = message });
 
-            // 1. Lấy giao dịch kèm sẵn 2 ví cũ
             var transfer = await _context.Transfers
                 .Include(t => t.Source)
                 .Include(t => t.Destination)
@@ -217,37 +205,41 @@ namespace SE114_MoneyApp_BE.Controllers
 
             if (transfer == null) return NotFound(new { Message = "Không tìm thấy chuyển khoản" });
 
-            // 2. TÌM CÁC VÍ MỚI
             var newSourceAccount = await _context.Accounts.FirstOrDefaultAsync(a => a.Id == request.SourceAccountId && a.UserId == userId);
             var newDestinationAccount = await _context.Accounts.FirstOrDefaultAsync(a => a.Id == request.DestinationAccountId && a.UserId == userId);
 
             if (newSourceAccount == null || newDestinationAccount == null)
-            {
-                return BadRequest(new { Message = "Tài khoản nguồn hoặc đích không hợp lệ/không thuộc quyền sở hữu" });
-            }
+                return BadRequest(new { Message = "Tài khoản không hợp lệ" });
+
             if (newSourceAccount.Id == newDestinationAccount.Id)
-            {
-                return BadRequest(new { Message = "Tài khoản nguồn và đích không được trùng nhau" });
-            }
+                return BadRequest(new { Message = "Tài khoản không được trùng nhau" });
 
-            // 3. HOÀN TIỀN LẠI CHO VÍ CŨ (Dùng thẳng object đã Include)
-            transfer.Source!.Balance += transfer.Amount;
-            transfer.Destination!.Balance -= transfer.Amount;
+            // 1. HOÀN TIỀN LẠI CHO VÍ CŨ (Dùng số tiền lưu lúc trước)
+            transfer.Source!.Balance += transfer.SourceAmount;
+            transfer.Destination!.Balance -= transfer.DestinationAmount;
 
-            // 4. ÁP DỤNG TRỪ TIỀN CHO VÍ MỚI
-            newSourceAccount.Balance -= request.Amount;
-            newDestinationAccount.Balance += request.Amount;
+            // 2. CẬP NHẬT THÔNG TIN MỚI
+            var newAbsSourceAmount = Math.Abs(request.SourceAmount);
+            var newAbsDestAmount = Math.Abs(request.DestinationAmount);
 
-            // 5. CẬP NHẬT THÔNG TIN LỊCH SỬ CHUYỂN KHOẢN
             transfer.SourceAccountId = request.SourceAccountId;
             transfer.DestinationAccountId = request.DestinationAccountId;
-            transfer.Amount = request.Amount;
+
+            transfer.SourceAmount = newAbsSourceAmount;
+            transfer.DestinationAmount = newAbsDestAmount;
+            transfer.BaseAmount = Math.Abs(request.BaseAmount);
+            transfer.SourceExchangeRate = request.SourceExchangeRate > 0 ? request.SourceExchangeRate : 1.0;
+            transfer.DestinationExchangeRate = request.DestinationExchangeRate > 0 ? request.DestinationExchangeRate : 1.0;
+
             transfer.TransferDate = request.TransferDate.Date.ToUniversalTime();
             transfer.Description = request.Description;
             transfer.LastUpdatedAt = DateTime.UtcNow;
 
-            await _context.SaveChangesAsync();
+            // 3. ÁP DỤNG TRỪ/CỘNG CHO VÍ MỚI
+            newSourceAccount.Balance -= newAbsSourceAmount;
+            newDestinationAccount.Balance += newAbsDestAmount;
 
+            await _context.SaveChangesAsync();
             return Ok(new { Message = "Cập nhật thành công" });
         }
 
@@ -262,51 +254,24 @@ namespace SE114_MoneyApp_BE.Controllers
         public async Task<IActionResult> DeleteTransfer(Guid id)
         {
             var (userId, success, message) = GetCurrentUserId();
-            if (!success)
-            {
-                return Unauthorized(new
-                {
-                    Message = message
-                });
-            }
+            if (!success) return Unauthorized(new { Message = message });
 
-            var transfer = await _context.Transfers.FindAsync(id);
-            if (transfer == null)
-            {
-                return NotFound(new
-                {
-                    Message = "Không tìm thấy chuyển khoản"
-                });
-            }
+            var transfer = await _context.Transfers
+                .Include(t => t.Source)
+                .Include(t => t.Destination)
+                .FirstOrDefaultAsync(t => t.Id == id);
 
-            var sourceAccount = await _context.Accounts.FindAsync(transfer.SourceAccountId);
-            var destinationAccount = await _context.Accounts.FindAsync(transfer.DestinationAccountId);
-            if (sourceAccount == null || destinationAccount == null)
-            {
-                return BadRequest(new
-                {
-                    Message = "Tài khoản nguồn hoặc tài khoản đích không tồn tại"
-                });
-            }
-            if (sourceAccount.UserId != userId)
-            {
-                return BadRequest(new
-                {
-                    Message = "Không có quyền xóa tài khoản."
-                });
-            }
+            if (transfer == null) return NotFound(new { Message = "Không tìm thấy chuyển khoản" });
+            if (transfer.Source!.UserId != userId) return BadRequest(new { Message = "Không có quyền xóa." });
 
-            // Hoàn tác chuyển khoản
-            sourceAccount.Balance += transfer.Amount;
-            destinationAccount.Balance -= transfer.Amount;
+            // Hoàn tác chuyển khoản bằng đúng hệ tiền của từng ví
+            transfer.Source.Balance += transfer.SourceAmount;
+            transfer.Destination!.Balance -= transfer.DestinationAmount;
 
             _context.Transfers.Remove(transfer);
             await _context.SaveChangesAsync();
 
-            return Ok(new
-            {
-                Message = "Xóa chuyển khoản thành công"
-            });
+            return Ok(new { Message = "Xóa chuyển khoản thành công" });
         }
     }
 }
