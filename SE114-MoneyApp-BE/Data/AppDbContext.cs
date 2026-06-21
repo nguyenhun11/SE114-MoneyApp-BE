@@ -15,6 +15,7 @@ namespace SE114_MoneyApp_BE.Data
         public DbSet<Category> Categories { get; set; }
         public DbSet<CategoryGroup> CategoryGroups { get; set; }
         public DbSet<Transaction> Transactions { get; set; }
+        public DbSet<Goal> Goals { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
