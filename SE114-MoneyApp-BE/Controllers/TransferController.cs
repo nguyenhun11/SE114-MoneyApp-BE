@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using SE114_MoneyApp_BE.Controllers.Base;
 using SE114_MoneyApp_BE.Data;
 using SE114_MoneyApp_BE.DTOs.Transfer;
@@ -11,7 +12,7 @@ namespace SE114_MoneyApp_BE.Controllers
     [Route("api/[controller]")]
     public class TransferController : AuthorizeControllerBase
     {
-        public TransferController(AppDbContext context) : base(context) { }
+        public TransferController(AppDbContext context, IMemoryCache cache) : base(context, cache) { }
 
         private static Expression<Func<Transfer, TransferResponse>> MapToTransferResponse = t => new TransferResponse
         {
@@ -38,15 +39,6 @@ namespace SE114_MoneyApp_BE.Controllers
             LastUpdatedAt = DateTime.SpecifyKind(t.LastUpdatedAt, DateTimeKind.Utc)
         };
 
-        // GET: api/Transfer/{userId}?startDate=2024-01-01&endDate=2024-12-31&source=accountId&destination=accountId
-        /// <summary>
-        /// Danh sách các chuyển khoản của người dùng, có thể lọc theo ngày tháng, tài khoản nguồn và tài khoản đích
-        /// </summary>
-        /// <param name="startDate"></param>
-        /// <param name="endDate"></param>
-        /// <param name="source"></param>
-        /// <param name="destination"></param>
-        /// <returns></returns>
         [HttpGet]
         public async Task<ActionResult<List<TransferResponse>>> GetTransfers(
             [FromQuery] DateTime? startDate = null,
@@ -55,13 +47,7 @@ namespace SE114_MoneyApp_BE.Controllers
             [FromQuery] Guid? destination = null)
         {
             var (userId, success, message) = GetCurrentUserId();
-            if (!success)
-            {
-                return Unauthorized(new
-                {
-                    Message = message
-                });
-            }
+            if (!success) return Unauthorized(new { Message = message });
 
             var query = _context.Transfers
                 .Include(t => t.Source)
@@ -98,45 +84,23 @@ namespace SE114_MoneyApp_BE.Controllers
             return Ok(transfers);
         }
 
-        // GET: api/Transfer/{id}
-        /// <summary>
-        /// Chi tiết chuyển khoản theo Id
-        /// </summary>
-        /// <param name="id"></param>
-        /// <returns></returns>
         [HttpGet("{id:guid}")]
         public async Task<ActionResult<TransferResponse>> GetTransferById(Guid id)
         {
             var (userId, success, message) = GetCurrentUserId();
-            if (!success)
-            {
-                return Unauthorized(new
-                {
-                    Message = message
-                });
-            }
+            if (!success) return Unauthorized(new { Message = message });
+
             var transfer = await _context.Transfers
                 .Include(t => t.Source)
                 .Include(t => t.Destination)
                 .Where(t => t.Id == id)
                 .Select(MapToTransferResponse)
                 .FirstOrDefaultAsync();
-            if (transfer == null)
-            {
-                return NotFound(new
-                {
-                    Message = "Không tìm thấy chuyển khoản"
-                });
-            }
+
+            if (transfer == null) return NotFound(new { Message = "Không tìm thấy chuyển khoản" });
             return Ok(transfer);
         }
 
-        // POST: api/Transfer
-        /// <summary>
-        /// Tạo chuyển khoản mới
-        /// </summary>
-        /// <param name="request"></param>
-        /// <returns></returns>
         [HttpPost]
         public async Task<IActionResult> CreateTransfer([FromBody] TransferRequest request)
         {
@@ -155,19 +119,33 @@ namespace SE114_MoneyApp_BE.Controllers
             if (sourceAccount.UserId != userId || destinationAccount.UserId != userId)
                 return BadRequest(new { Message = "Tài khoản không hợp lệ" });
 
-            var absSourceAmount = Math.Abs(request.SourceAmount);
-            var absDestAmount = Math.Abs(request.DestinationAmount);
+            // Lấy thông tin user để quy đổi BaseAmount theo DefaultCurrency
+            var currentUser = await _context.Users.FindAsync(userId);
+
+            // 1. CHUẨN BỊ DỮ LIỆU TÍNH TOÁN
+            double absSourceAmount = Math.Abs((double)request.SourceAmount);
+            string sourceCurrency = sourceAccount.CurrencyCode.ToUpper();
+            string destCurrency = destinationAccount.CurrencyCode.ToUpper();
+            string systemCurrency = !string.IsNullOrEmpty(currentUser?.DefaultCurrency) ? currentUser.DefaultCurrency.ToUpper() : "VND";
+
+            _cache.TryGetValue("LatestExchangeRates", out Dictionary<string, double>? rates);
+
+            // 2. BACKEND TỰ TÍNH TOÁN
+            double calculatedDestAmount = ConvertCurrency(absSourceAmount, sourceCurrency, destCurrency, rates);
+            double calculatedBaseAmount = ConvertCurrency(absSourceAmount, sourceCurrency, systemCurrency, rates);
+
+            double destExchangeRate = absSourceAmount > 0 ? calculatedDestAmount / absSourceAmount : 1.0;
 
             var transfer = new Transfer
             {
                 SourceAccountId = request.SourceAccountId,
                 DestinationAccountId = request.DestinationAccountId,
 
-                SourceAmount = absSourceAmount,
-                DestinationAmount = absDestAmount,
-                BaseAmount = Math.Abs(request.BaseAmount),
-                SourceExchangeRate = request.SourceExchangeRate > 0 ? request.SourceExchangeRate : 1.0,
-                DestinationExchangeRate = request.DestinationExchangeRate > 0 ? request.DestinationExchangeRate : 1.0,
+                SourceAmount = (decimal)absSourceAmount,
+                DestinationAmount = (decimal)calculatedDestAmount, // Lấy số Backend tính
+                BaseAmount = (decimal)calculatedBaseAmount,        // Lấy số Backend tính
+                SourceExchangeRate = 1.0,
+                DestinationExchangeRate = destExchangeRate,        // Lấy số Backend tính
 
                 TransferDate = request.TransferDate.Date.ToUniversalTime(),
                 Description = request.Description,
@@ -175,9 +153,9 @@ namespace SE114_MoneyApp_BE.Controllers
                 LastUpdatedAt = DateTime.UtcNow
             };
 
-            // Trừ ví nguồn (dùng SourceAmount), Cộng ví đích (dùng DestinationAmount)
-            sourceAccount.Balance -= absSourceAmount;
-            destinationAccount.Balance += absDestAmount;
+            // 3. TRỪ/CỘNG VÍ BẰNG CON SỐ TỰ TÍNH
+            sourceAccount.Balance -= (decimal)absSourceAmount;
+            destinationAccount.Balance += (decimal)calculatedDestAmount;
 
             _context.Transfers.Add(transfer);
             await _context.SaveChangesAsync();
@@ -185,13 +163,6 @@ namespace SE114_MoneyApp_BE.Controllers
             return Ok(new { Message = "Chuyển khoản thành công", TransferId = transfer.Id });
         }
 
-        // PUT: api/Transfer/{id}
-        /// <summary>
-        /// Cập nhật chuyển khoản
-        /// </summary>
-        /// <param name="id"></param>
-        /// <param name="request"></param>
-        /// <returns></returns>
         [HttpPut("{id:guid}")]
         public async Task<IActionResult> UpdateTransfer(Guid id, [FromBody] TransferRequest request)
         {
@@ -218,38 +189,42 @@ namespace SE114_MoneyApp_BE.Controllers
             transfer.Source!.Balance += transfer.SourceAmount;
             transfer.Destination!.Balance -= transfer.DestinationAmount;
 
-            // 2. CẬP NHẬT THÔNG TIN MỚI
-            var newAbsSourceAmount = Math.Abs(request.SourceAmount);
-            var newAbsDestAmount = Math.Abs(request.DestinationAmount);
+            var currentUser = await _context.Users.FindAsync(userId);
 
+            // 2. TÍNH TOÁN LẠI TỪ ĐẦU DỰA TRÊN REQUEST MỚI
+            double newAbsSourceAmount = Math.Abs((double)request.SourceAmount);
+            string newSourceCurrency = newSourceAccount.CurrencyCode.ToUpper();
+            string newDestCurrency = newDestinationAccount.CurrencyCode.ToUpper();
+            string systemCurrency = !string.IsNullOrEmpty(currentUser?.DefaultCurrency) ? currentUser.DefaultCurrency.ToUpper() : "VND";
+
+            _cache.TryGetValue("LatestExchangeRates", out Dictionary<string, double>? rates);
+
+            double newCalculatedDestAmount = ConvertCurrency(newAbsSourceAmount, newSourceCurrency, newDestCurrency, rates);
+            double newCalculatedBaseAmount = ConvertCurrency(newAbsSourceAmount, newSourceCurrency, systemCurrency, rates);
+            double newDestExchangeRate = newAbsSourceAmount > 0 ? newCalculatedDestAmount / newAbsSourceAmount : 1.0;
+
+            // 3. CẬP NHẬT DỮ LIỆU CHUYỂN KHOẢN
             transfer.SourceAccountId = request.SourceAccountId;
             transfer.DestinationAccountId = request.DestinationAccountId;
 
-            transfer.SourceAmount = newAbsSourceAmount;
-            transfer.DestinationAmount = newAbsDestAmount;
-            transfer.BaseAmount = Math.Abs(request.BaseAmount);
-            transfer.SourceExchangeRate = request.SourceExchangeRate > 0 ? request.SourceExchangeRate : 1.0;
-            transfer.DestinationExchangeRate = request.DestinationExchangeRate > 0 ? request.DestinationExchangeRate : 1.0;
+            transfer.SourceAmount = (decimal)newAbsSourceAmount;
+            transfer.DestinationAmount = (decimal)newCalculatedDestAmount;
+            transfer.BaseAmount = (decimal)newCalculatedBaseAmount;
+            transfer.SourceExchangeRate = 1.0;
+            transfer.DestinationExchangeRate = newDestExchangeRate;
 
             transfer.TransferDate = request.TransferDate.Date.ToUniversalTime();
             transfer.Description = request.Description;
             transfer.LastUpdatedAt = DateTime.UtcNow;
 
-            // 3. ÁP DỤNG TRỪ/CỘNG CHO VÍ MỚI
-            newSourceAccount.Balance -= newAbsSourceAmount;
-            newDestinationAccount.Balance += newAbsDestAmount;
+            // 4. ÁP DỤNG TRỪ/CỘNG CHO VÍ MỚI BẰNG CON SỐ VỪA TÍNH
+            newSourceAccount.Balance -= (decimal)newAbsSourceAmount;
+            newDestinationAccount.Balance += (decimal)newCalculatedDestAmount;
 
             await _context.SaveChangesAsync();
             return Ok(new { Message = "Cập nhật thành công" });
         }
 
-
-        // DELETE: api/Transfer/{id}
-        /// <summary>
-        /// Xóa chuyển khoản
-        /// </summary>
-        /// <param name="id"></param>
-        /// <returns></returns>
         [HttpDelete("{id:guid}")]
         public async Task<IActionResult> DeleteTransfer(Guid id)
         {
@@ -264,7 +239,7 @@ namespace SE114_MoneyApp_BE.Controllers
             if (transfer == null) return NotFound(new { Message = "Không tìm thấy chuyển khoản" });
             if (transfer.Source!.UserId != userId) return BadRequest(new { Message = "Không có quyền xóa." });
 
-            // Hoàn tác chuyển khoản bằng đúng hệ tiền của từng ví
+            // Hoàn tác chuyển khoản bằng đúng hệ tiền của từng ví đã lưu, không cần tính lại
             transfer.Source.Balance += transfer.SourceAmount;
             transfer.Destination!.Balance -= transfer.DestinationAmount;
 

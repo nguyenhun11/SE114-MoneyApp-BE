@@ -12,7 +12,6 @@ namespace SE114_MoneyApp_BE.DTOs.Transaction
         public string CategoryName { get; set; } = string.Empty;
         public CategoryType Type { get; set; }
 
-        public decimal Amount { get; set; }
         public decimal OriginalAmount { get; set; }
         public string CurrencyCode { get; set; } = string.Empty;
         public decimal AccountAmount { get; set; }

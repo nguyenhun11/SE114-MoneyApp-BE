@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using SE114_MoneyApp_BE.Controllers.Base;
 using SE114_MoneyApp_BE.Data;
 using SE114_MoneyApp_BE.DTOs.AdjustBalance;
@@ -11,7 +12,7 @@ namespace SE114_MoneyApp_BE.Controllers
     [Route("api/[controller]")]
     public class AdjustBalanceController : AuthorizeControllerBase
     {
-        public AdjustBalanceController(AppDbContext context) : base(context) { }
+        public AdjustBalanceController(AppDbContext context, IMemoryCache cache) : base(context, cache) { }
 
 
         /// <summary>

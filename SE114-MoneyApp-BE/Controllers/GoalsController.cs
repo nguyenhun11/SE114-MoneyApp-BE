@@ -1,40 +1,24 @@
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
+using SE114_MoneyApp_BE.Controllers.Base;
 using SE114_MoneyApp_BE.Data;
 using SE114_MoneyApp_BE.DTOs.Goal;
 using SE114_MoneyApp_BE.Models;
-using System.Security.Claims;
 
 namespace SE114_MoneyApp_BE.Controllers
 {
     [Route("api/[controller]")]
-    [ApiController]
-    [Authorize]
-    public class GoalsController : ControllerBase
+    public class GoalsController : AuthorizeControllerBase
     {
-        private readonly AppDbContext _context;
+        public GoalsController(AppDbContext context, IMemoryCache cache) : base(context, cache) { }
 
-        public GoalsController(AppDbContext context)
-        {
-            _context = context;
-        }
-
-        private int GetUserId()
-        {
-            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
-            if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int userId))
-            {
-                throw new UnauthorizedAccessException("Không thể xác định danh tính người dùng");
-            }
-            return userId;
-        }
-
-        // GET: api/goals
         [HttpGet]
         public async Task<ActionResult<IEnumerable<GoalResponse>>> GetGoals()
         {
-            int userId = GetUserId();
+            var (userId, success, message) = GetCurrentUserId();
+            if (!success) return Unauthorized(new { Message = message });
+
             var goals = await _context.Goals
                 .Where(g => g.UserId == userId && g.IsActive)
                 .Select(g => new GoalResponse
@@ -43,7 +27,7 @@ namespace SE114_MoneyApp_BE.Controllers
                     Name = g.Name,
                     TargetAmount = g.TargetAmount,
                     CurrentAmount = g.CurrentAmount,
-                    Deadline = g.Deadline,
+                    Deadline = DateTime.SpecifyKind(g.Deadline, DateTimeKind.Utc), // Ép kiểu UTC khi trả về
                     IconId = g.IconId,
                     ColorId = g.ColorId,
                     IsActive = g.IsActive
@@ -53,11 +37,11 @@ namespace SE114_MoneyApp_BE.Controllers
             return Ok(goals);
         }
 
-        // POST: api/goals
         [HttpPost]
         public async Task<ActionResult<GoalResponse>> CreateGoal([FromBody] GoalRequest request)
         {
-            int userId = GetUserId();
+            var (userId, success, message) = GetCurrentUserId();
+            if (!success) return Unauthorized(new { Message = message });
 
             var goal = new Goal
             {
@@ -65,9 +49,10 @@ namespace SE114_MoneyApp_BE.Controllers
                 Name = request.Name,
                 TargetAmount = request.TargetAmount,
                 CurrentAmount = 0,
-                Deadline = request.Deadline,
+                Deadline = request.Deadline.ToUniversalTime(),
                 IconId = request.IconId,
-                ColorId = request.ColorId
+                ColorId = request.ColorId,
+                IsActive = true
             };
 
             _context.Goals.Add(goal);
@@ -88,11 +73,12 @@ namespace SE114_MoneyApp_BE.Controllers
             return CreatedAtAction(nameof(GetGoals), new { id = goal.Id }, response);
         }
 
-        // PUT: api/goals/{id}
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateGoal(int id, [FromBody] GoalRequest request)
         {
-            int userId = GetUserId();
+            var (userId, success, message) = GetCurrentUserId();
+            if (!success) return Unauthorized(new { Message = message });
+
             var goal = await _context.Goals.FirstOrDefaultAsync(g => g.Id == id && g.UserId == userId);
 
             if (goal == null)
@@ -102,7 +88,7 @@ namespace SE114_MoneyApp_BE.Controllers
 
             goal.Name = request.Name;
             goal.TargetAmount = request.TargetAmount;
-            goal.Deadline = request.Deadline;
+            goal.Deadline = request.Deadline.ToUniversalTime();
             goal.IconId = request.IconId;
             goal.ColorId = request.ColorId;
 
@@ -111,11 +97,12 @@ namespace SE114_MoneyApp_BE.Controllers
             return Ok(new { Message = "Cập nhật mục tiêu thành công" });
         }
 
-        // DELETE: api/goals/{id}
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteGoal(int id)
         {
-            int userId = GetUserId();
+            var (userId, success, message) = GetCurrentUserId();
+            if (!success) return Unauthorized(new { Message = message });
+
             var goal = await _context.Goals.FirstOrDefaultAsync(g => g.Id == id && g.UserId == userId);
 
             if (goal == null)
@@ -130,11 +117,12 @@ namespace SE114_MoneyApp_BE.Controllers
             return Ok(new { Message = "Xóa mục tiêu thành công" });
         }
 
-        // POST: api/goals/{id}/deposit
         [HttpPost("{id}/deposit")]
         public async Task<IActionResult> DepositToGoal(int id, [FromBody] DepositRequest request)
         {
-            int userId = GetUserId();
+            var (userId, success, message) = GetCurrentUserId();
+            if (!success) return Unauthorized(new { Message = message });
+
             var goal = await _context.Goals.FirstOrDefaultAsync(g => g.Id == id && g.UserId == userId && g.IsActive);
 
             if (goal == null)
@@ -142,6 +130,7 @@ namespace SE114_MoneyApp_BE.Controllers
                 return NotFound(new { Message = "Không tìm thấy mục tiêu hoặc mục tiêu đã bị đóng" });
             }
 
+            // Mặc định nạp tiền là thêm số ảo. Nếu sau này có yêu cầu trừ ví thì viết thêm logic ở đây
             goal.CurrentAmount += request.Amount;
             await _context.SaveChangesAsync();
 
