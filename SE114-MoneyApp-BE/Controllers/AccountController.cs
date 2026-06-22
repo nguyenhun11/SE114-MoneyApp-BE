@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Conventions;
+using Microsoft.Extensions.Caching.Memory;
 using SE114_MoneyApp_BE.Controllers.Base;
 using SE114_MoneyApp_BE.Data;
 using SE114_MoneyApp_BE.DTOs.Account;
@@ -15,7 +16,7 @@ namespace SE114_MoneyApp_BE.Controllers
     [Route("api/[controller]")]
     public class AccountController : AuthorizeControllerBase
     {
-        public AccountController(AppDbContext context) : base(context) { }
+        public AccountController(AppDbContext context, IMemoryCache cache) : base(context, cache) { }
 
         private static Expression<Func<Account, AccountResponse>> MapToAccountResponse = account => new AccountResponse
         {

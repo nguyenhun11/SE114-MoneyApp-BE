@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using SE114_MoneyApp_BE.Controllers.Base;
 using SE114_MoneyApp_BE.Data;
 using SE114_MoneyApp_BE.DTOs.Statistic;
@@ -18,7 +19,7 @@ namespace SE114_MoneyApp_BE.Controllers
     [Route("api/[controller]")]
     public class StatisticController : AuthorizeControllerBase
     {
-        public StatisticController(AppDbContext context) : base(context) { }
+        public StatisticController(AppDbContext context, IMemoryCache cache) : base(context, cache) { }
 
         #region Helpers
         private string GetPeriodLabel(DateTime date, GroupByPeriod groupBy)

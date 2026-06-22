@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using SE114_MoneyApp_BE.Controllers.Base;
 using SE114_MoneyApp_BE.Data;
 using SE114_MoneyApp_BE.DTOs.Category;
@@ -13,7 +14,7 @@ namespace SE114_MoneyApp_BE.Controllers
     [Route("api/[controller]")]
     public class CategoryController : AuthorizeControllerBase
     {
-        public CategoryController(AppDbContext context) : base(context) { }
+        public CategoryController(AppDbContext context, IMemoryCache cache) : base(context, cache) { }
 
         private static Expression<Func<Category, CategoryResponse>> MapToCategoryResponse = c => new CategoryResponse
         {

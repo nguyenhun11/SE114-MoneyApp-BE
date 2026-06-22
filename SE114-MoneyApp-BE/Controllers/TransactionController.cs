@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using SE114_MoneyApp_BE.Controllers.Base;
 using SE114_MoneyApp_BE.Data;
 using SE114_MoneyApp_BE.DTOs.Transaction;
@@ -12,7 +13,7 @@ namespace SE114_MoneyApp_BE.Controllers
     [Route("api/[controller]")]
     public class TransactionController : AuthorizeControllerBase
     {
-        public TransactionController(AppDbContext context) : base(context) { }
+        public TransactionController(AppDbContext context, IMemoryCache cache) : base(context, cache) { }
 
         private Expression<Func<Transaction, TransactionResponse>> MapToTransactionResponse = t => new TransactionResponse
         {
@@ -117,10 +118,23 @@ namespace SE114_MoneyApp_BE.Controllers
                 .FirstOrDefaultAsync(c => c.Id == request.CategoryId && c.UserId == userId);
             if (category == null) return BadRequest("Invalid category");
 
-            var absOriginalAmount = Math.Abs(request.OriginalAmount);
-            var absAccountAmount = Math.Abs(request.AccountAmount);
-            var absBaseAmount = Math.Abs(request.BaseAmount);
-            var currencyCode = !string.IsNullOrEmpty(request.CurrencyCode) ? request.CurrencyCode : account.CurrencyCode;
+            // Lấy thông tin user để quy đổi BaseAmount theo đúng đồng tiền họ đang xài
+            var currentUser = await _context.Users.FindAsync(userId);
+
+            // 1. CHUẨN BỊ DỮ LIỆU TÍNH TOÁN
+            double absOriginalAmount = Math.Abs((double)request.OriginalAmount);
+            string transactionCurrency = !string.IsNullOrEmpty(request.CurrencyCode) ? request.CurrencyCode.ToUpper() : account.CurrencyCode.ToUpper();
+            string accountCurrency = account.CurrencyCode.ToUpper();
+
+            // ĐÃ SỬA: Lấy DefaultCurrency của user (Fallback về VND nếu lỗi data)
+            string systemCurrency = !string.IsNullOrEmpty(currentUser?.DefaultCurrency) ? currentUser.DefaultCurrency.ToUpper() : "VND";
+
+            _cache.TryGetValue("LatestExchangeRates", out Dictionary<string, double>? rates);
+
+            // 2. BACKEND TỰ TÍNH TOÁN
+            double calculatedAccountAmount = ConvertCurrency(absOriginalAmount, transactionCurrency, accountCurrency, rates);
+            double calculatedBaseAmount = ConvertCurrency(absOriginalAmount, transactionCurrency, systemCurrency, rates);
+            double exchangeRate = absOriginalAmount > 0 ? calculatedAccountAmount / absOriginalAmount : 1.0;
 
             var transaction = new Transaction
             {
@@ -132,23 +146,24 @@ namespace SE114_MoneyApp_BE.Controllers
                 Account = account,
                 Category = category,
 
-                OriginalAmount = absOriginalAmount,
-                CurrencyCode = currencyCode,
-                AccountAmount = absAccountAmount,
-                BaseAmount = absBaseAmount,
-                ExchangeRate = request.ExchangeRate,
+                OriginalAmount = (decimal)absOriginalAmount,
+                CurrencyCode = transactionCurrency,
+                AccountAmount = (decimal)calculatedAccountAmount,
+                BaseAmount = (decimal)calculatedBaseAmount,
+                ExchangeRate = exchangeRate,
 
                 CreatedAt = DateTime.UtcNow,
                 LastUpdatedAt = DateTime.UtcNow
             };
 
+            // 3. TRỪ TIỀN BẰNG CON SỐ ĐÃ TỰ TÍNH
             switch (category.CategoryGroup!.Type)
             {
                 case CategoryType.Expense:
-                    account.Balance -= absAccountAmount;
+                    account.Balance -= (decimal)calculatedAccountAmount;
                     break;
                 case CategoryType.Income:
-                    account.Balance += absAccountAmount;
+                    account.Balance += (decimal)calculatedAccountAmount;
                     break;
                 default:
                     return BadRequest("Invalid category type");
@@ -177,6 +192,7 @@ namespace SE114_MoneyApp_BE.Controllers
                 .Include(c => c.CategoryGroup)
                 .FirstOrDefaultAsync(c => c.Id == transaction.CategoryId);
 
+            // HOÀN TIỀN CŨ
             if (oldAccount != null && oldCategory != null)
             {
                 var oldAmount = transaction.AccountAmount;
@@ -199,11 +215,22 @@ namespace SE114_MoneyApp_BE.Controllers
                 .FirstOrDefaultAsync(c => c.Id == request.CategoryId && c.UserId == userId);
             if (newCategory == null) return BadRequest("Invalid category");
 
-            var newAbsOriginalAmount = Math.Abs(request.OriginalAmount);
-            var newAbsAccountAmount = Math.Abs(request.AccountAmount);
-            var newAbsBaseAmount = Math.Abs(request.BaseAmount);
-            var newCurrencyCode = !string.IsNullOrEmpty(request.CurrencyCode) ? request.CurrencyCode : newAccount.CurrencyCode;
+            var currentUser = await _context.Users.FindAsync(userId);
 
+            // 1. TÍNH TOÁN LẠI TỪ ĐẦU DỰA TRÊN REQUEST MỚI
+            double newAbsOriginalAmount = Math.Abs((double)request.OriginalAmount);
+            string newTransactionCurrency = !string.IsNullOrEmpty(request.CurrencyCode) ? request.CurrencyCode.ToUpper() : newAccount.CurrencyCode.ToUpper();
+            string newAccountCurrency = newAccount.CurrencyCode.ToUpper();
+
+            string systemCurrency = !string.IsNullOrEmpty(currentUser?.DefaultCurrency) ? currentUser.DefaultCurrency.ToUpper() : "VND";
+
+            _cache.TryGetValue("LatestExchangeRates", out Dictionary<string, double>? rates);
+
+            double newCalculatedAccountAmount = ConvertCurrency(newAbsOriginalAmount, newTransactionCurrency, newAccountCurrency, rates);
+            double newCalculatedBaseAmount = ConvertCurrency(newAbsOriginalAmount, newTransactionCurrency, systemCurrency, rates);
+            double newExchangeRate = newAbsOriginalAmount > 0 ? newCalculatedAccountAmount / newAbsOriginalAmount : 1.0;
+
+            // 2. CẬP NHẬT DỮ LIỆU
             transaction.AccountId = request.AccountId;
             transaction.CategoryId = request.CategoryId;
             transaction.TransactionDate = DateTime.SpecifyKind(request.Date.Date, DateTimeKind.Utc);
@@ -213,19 +240,20 @@ namespace SE114_MoneyApp_BE.Controllers
             transaction.Account = newAccount;
             transaction.Category = newCategory;
 
-            transaction.OriginalAmount = newAbsOriginalAmount;
-            transaction.CurrencyCode = newCurrencyCode;
-            transaction.AccountAmount = newAbsAccountAmount;
-            transaction.BaseAmount = newAbsBaseAmount;
-            transaction.ExchangeRate = request.ExchangeRate;
+            transaction.OriginalAmount = (decimal)newAbsOriginalAmount;
+            transaction.CurrencyCode = newTransactionCurrency;
+            transaction.AccountAmount = (decimal)newCalculatedAccountAmount;
+            transaction.BaseAmount = (decimal)newCalculatedBaseAmount;
+            transaction.ExchangeRate = newExchangeRate;
 
+            // 3. TRỪ/CỘNG TIỀN MỚI
             switch (newCategory.CategoryGroup!.Type)
             {
                 case CategoryType.Expense:
-                    newAccount.Balance -= newAbsAccountAmount;
+                    newAccount.Balance -= (decimal)newCalculatedAccountAmount;
                     break;
                 case CategoryType.Income:
-                    newAccount.Balance += newAbsAccountAmount;
+                    newAccount.Balance += (decimal)newCalculatedAccountAmount;
                     break;
             }
 
