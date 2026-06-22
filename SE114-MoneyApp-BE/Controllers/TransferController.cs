@@ -57,7 +57,7 @@ namespace SE114_MoneyApp_BE.Controllers
 
             if (startDate.HasValue)
             {
-                query = query.Where(t => t.CreatedAt >= startDate.Value.Date);
+                query = query.Where(t => t.TransferDate >= startDate.Value.Date);
             }
 
             if (endDate.HasValue)

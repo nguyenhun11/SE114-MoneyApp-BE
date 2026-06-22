@@ -49,11 +49,12 @@ namespace SE114_MoneyApp_BE.Controllers
         };
 
         [HttpGet]
-        public async Task<ActionResult<List<TransactionResponse>>> GetTransactions([FromQuery] DateTime? startDate,
-            [FromQuery] DateTime? endDate,
-            [FromQuery] CategoryType? categoryType,
-            [FromQuery] Guid? accountId,
-            [FromQuery] Guid? categoryId)
+        public async Task<ActionResult<List<TransactionResponse>>> GetTransactions(
+    [FromQuery] DateTime? startDate,
+    [FromQuery] DateTime? endDate,
+    [FromQuery] CategoryType? categoryType,
+    [FromQuery] Guid? accountId,
+    [FromQuery] Guid? categoryId)
         {
             var (userId, success, message) = GetCurrentUserId();
             if (!success) return Unauthorized(message);
@@ -66,11 +67,11 @@ namespace SE114_MoneyApp_BE.Controllers
 
             if (startDate.HasValue)
             {
-                query = query.Where(t => t.TransactionDate >= startDate.Value);
+                query = query.Where(t => t.TransactionDate >= startDate.Value.Date);
             }
             if (endDate.HasValue)
             {
-                var endOfDay = endDate.Value.AddDays(1).AddTicks(-1);
+                var endOfDay = endDate.Value.Date.AddDays(1).AddTicks(-1);
                 query = query.Where(t => t.TransactionDate <= endOfDay);
             }
             if (categoryType.HasValue && categoryType.Value != CategoryType.All)

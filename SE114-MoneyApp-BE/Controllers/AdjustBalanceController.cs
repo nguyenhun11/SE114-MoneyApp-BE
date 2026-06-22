@@ -24,15 +24,14 @@ namespace SE114_MoneyApp_BE.Controllers
         /// <returns></returns>
         [HttpGet]
         public async Task<ActionResult<List<AdjustBalanceResponse>>> GetAdjustBalances(
-            [FromQuery] DateTime? startDate,
-            [FromQuery] DateTime? endDate,
-            [FromQuery] Guid? accountId)
+                    [FromQuery] DateTime? startDate,
+                    [FromQuery] DateTime? endDate,
+                    [FromQuery] Guid? accountId)
         {
             var (userId, success, message) = GetCurrentUserId();
             if (!success) return Unauthorized(new { Message = message });
 
             var query = _context.AdjustBalances
-                .Include(ab => ab.Account)
                 .Where(ab => ab.Account!.UserId == userId)
                 .AsQueryable();
 
@@ -55,7 +54,7 @@ namespace SE114_MoneyApp_BE.Controllers
                     Id = ab.Id,
                     AccountId = ab.AccountId,
                     AccountName = ab.Account!.AccountName,
-                    CurrencyCode = ab.Account.CurrencyCode, // MAP TIỀN TỆ TỪ BẢNG ACCOUNT
+                    CurrencyCode = ab.Account.CurrencyCode,
                     Amount = ab.Amount,
                     CreatedAt = DateTime.SpecifyKind(ab.CreatedAt, DateTimeKind.Utc)
                 })
