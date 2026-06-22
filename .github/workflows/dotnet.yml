@@ -20,14 +20,16 @@ jobs:
       with:
         dotnet-version: '8.0.x' 
         
-    # Tự động sinh ra file appsettings.json từ Secret
+    # Tự động sinh ra file appsettings.json từ Secret an toàn qua ENV
     - name: Generate appsettings.json
+      env:
+        APPSETTINGS_DATA: ${{ secrets.APPSETTINGS_JSON_PROD }}
       run: |
-        echo "${{ secrets.APPSETTINGS_JSON_PROD }}" > SE114-MoneyApp-BE/appsettings.json
+        echo "$APPSETTINGS_DATA" > SE114-MoneyApp-BE/appsettings.json
         
-    # 3. Khôi phục các thư viện
+    # 3. Khôi phục các thư viện (Chỉ định rõ file csproj cho an toàn)
     - name: Restore dependencies
-      run: dotnet restore
+      run: dotnet restore SE114-MoneyApp-BE/SE114-MoneyApp-BE.csproj
 
     # 4. Build và đóng gói (Publish) code ra thư mục publish_output
     - name: Publish code
@@ -36,7 +38,6 @@ jobs:
     - name: Take app offline
       run: |
         echo "API is updating..." > app_offline.htm
-        # Cập nhật lại đường dẫn curl cho đích danh file
         curl -T app_offline.htm ftp://${{ secrets.FTP_SERVER }}/se114-moneyapp/app_offline.htm --user "${{ secrets.FTP_USERNAME }}:${{ secrets.FTP_PASSWORD }}"
         echo "Đã đưa app_offline.htm lên server. Bắt đầu đếm ngược 15 giây chờ IIS nhả file..."
         sleep 15
