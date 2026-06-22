@@ -41,7 +41,7 @@ namespace SE114_MoneyApp_BE.Controllers
             DateTime localEnd = endDate.AddHours(timeZoneOffset).Date;
 
             DateTime utcStart = DateTime.SpecifyKind(localStart.AddHours(-timeZoneOffset), DateTimeKind.Utc);
-            DateTime utcEnd = DateTime.SpecifyKind(localEnd.AddDays(1).AddTicks(-1).AddHours(-timeZoneOffset), DateTimeKind.Utc);
+            DateTime utcEnd = DateTime.SpecifyKind(localEnd.AddDays(1).AddHours(-timeZoneOffset), DateTimeKind.Utc);
 
             return (utcStart, utcEnd);
         }
@@ -61,7 +61,7 @@ namespace SE114_MoneyApp_BE.Controllers
                 .Include(t => t.Category)
                 .Where(t => t.Account!.UserId == userId
                          && t.TransactionDate >= utcStart
-                         && t.TransactionDate <= utcEnd
+                         && t.TransactionDate < utcEnd
                          && t.Category!.CategoryGroup!.Type == type)
                 .GroupBy(t => new { t.CategoryId, t.Category!.CategoryName, t.Category.ColorId, t.Category.IconId })
                 .Select(g => new CategoryPieChartDto
@@ -116,7 +116,7 @@ namespace SE114_MoneyApp_BE.Controllers
                 .Include(t => t.Category)
                 .Where(t => t.Account!.UserId == userId
                          && t.TransactionDate >= utcStart
-                         && t.TransactionDate <= utcEnd
+                         && t.TransactionDate < utcEnd
                          && t.Category!.CategoryGroup!.Type == type)
                 .ToListAsync();
 
@@ -192,7 +192,7 @@ namespace SE114_MoneyApp_BE.Controllers
                 .ThenInclude(c => c!.CategoryGroup)
                 .Where(t => t.Account!.UserId == userId
                          && t.TransactionDate >= utcStart
-                         && t.TransactionDate <= utcEnd)
+                         && t.TransactionDate < utcEnd)
                 .ToListAsync();
 
             var cashFlow = transactions
