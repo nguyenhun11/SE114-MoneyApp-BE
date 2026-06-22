@@ -50,6 +50,7 @@ builder.Services.AddSwaggerGen(options =>
 // Token Service
 builder.Services.AddScoped<TokenService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<GamificationService>();
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {

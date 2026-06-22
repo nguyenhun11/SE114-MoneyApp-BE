@@ -5,6 +5,7 @@ using SE114_MoneyApp_BE.Controllers.Base;
 using SE114_MoneyApp_BE.Data;
 using SE114_MoneyApp_BE.DTOs.Transaction;
 using SE114_MoneyApp_BE.Models;
+using SE114_MoneyApp_BE.Services;
 using System.Diagnostics;
 using System.Linq.Expressions;
 
@@ -13,7 +14,12 @@ namespace SE114_MoneyApp_BE.Controllers
     [Route("api/[controller]")]
     public class TransactionController : AuthorizeControllerBase
     {
-        public TransactionController(AppDbContext context, IMemoryCache cache) : base(context, cache) { }
+        private readonly GamificationService _gamificationService;
+
+        public TransactionController(AppDbContext context, IMemoryCache cache, GamificationService gamificationService) : base(context, cache)
+        {
+            _gamificationService = gamificationService;
+        }
 
         private Expression<Func<Transaction, TransactionResponse>> MapToTransactionResponse = t => new TransactionResponse
         {
@@ -172,6 +178,9 @@ namespace SE114_MoneyApp_BE.Controllers
 
             _context.Transactions.Add(transaction);
             await _context.SaveChangesAsync();
+
+            // Cập nhật điểm cho MoneyCity dựa trên ngày của giao dịch
+            await _gamificationService.OnTransactionAdded(userId, transaction.TransactionDate);
 
             var response = MapToTransactionResponse.Compile().Invoke(transaction);
             return Ok(response);

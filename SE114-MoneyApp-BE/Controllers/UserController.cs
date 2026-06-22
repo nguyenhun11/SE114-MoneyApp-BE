@@ -5,14 +5,20 @@ using SE114_MoneyApp_BE.Controllers.Base;
 using SE114_MoneyApp_BE.Data;
 using SE114_MoneyApp_BE.DTOs.User;
 using SE114_MoneyApp_BE.Models;
+using SE114_MoneyApp_BE.Services;
 using System.Linq.Expressions;
 
 namespace SE114_MoneyApp_BE.Controllers
 {
     [Route("api/[controller]")]
     public class UserController : AuthorizeControllerBase
-    {      
-        public UserController(AppDbContext context, IMemoryCache cache) : base(context, cache) { }
+    {
+        private readonly GamificationService _gamificationService;
+
+        public UserController(AppDbContext context, IMemoryCache cache, GamificationService gamificationService) : base(context, cache)
+        {
+            _gamificationService = gamificationService;
+        }
 
         private static Expression<Func<User, UserProfileResponse>> MapToUserProfileResponse = user => new UserProfileResponse
         {
@@ -346,6 +352,9 @@ namespace SE114_MoneyApp_BE.Controllers
 
             user.LastUpdatedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync();
+
+            // Cập nhật điểm cho MoneyCity khi điểm danh theo ngày của client
+            await _gamificationService.OnDailyCheckIn(userId, clientToday);
 
             return Ok(new { Message = responseMessage, CurrentStreak = user.DailyStreak, IsIncreased = isStreakIncreased });
         }

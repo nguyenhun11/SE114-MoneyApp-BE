@@ -5,13 +5,19 @@ using SE114_MoneyApp_BE.Controllers.Base;
 using SE114_MoneyApp_BE.Data;
 using SE114_MoneyApp_BE.DTOs.Goal;
 using SE114_MoneyApp_BE.Models;
+using SE114_MoneyApp_BE.Services;
 
 namespace SE114_MoneyApp_BE.Controllers
 {
     [Route("api/[controller]")]
     public class GoalsController : AuthorizeControllerBase
     {
-        public GoalsController(AppDbContext context, IMemoryCache cache) : base(context, cache) { }
+        private readonly GamificationService _gamificationService;
+
+        public GoalsController(AppDbContext context, IMemoryCache cache, GamificationService gamificationService) : base(context, cache)
+        {
+            _gamificationService = gamificationService;
+        }
 
         [HttpGet]
         public async Task<ActionResult<IEnumerable<GoalResponse>>> GetGoals()
@@ -130,9 +136,14 @@ namespace SE114_MoneyApp_BE.Controllers
                 return NotFound(new { Message = "Không tìm thấy mục tiêu hoặc mục tiêu đã bị đóng" });
             }
 
-            // Mặc định nạp tiền là thêm số ảo. Nếu sau này có yêu cầu trừ ví thì viết thêm logic ở đây
             goal.CurrentAmount += request.Amount;
             await _context.SaveChangesAsync();
+
+            // Kiểm tra hoàn thành mục tiêu để cộng điểm MoneyCity
+            if (goal.CurrentAmount >= goal.TargetAmount)
+            {
+                await _gamificationService.OnGoalCompleted(userId);
+            }
 
             return Ok(new
             {
