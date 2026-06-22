@@ -22,6 +22,7 @@ namespace SE114_MoneyApp_BE.Controllers
             ImageUrl = user.ImageUrl,
             PhoneNumber = user.PhoneNumber,
             DailyStreak = user.DailyStreak,
+            TodayCheckedIn = user.LastActiveDate.HasValue && user.LastActiveDate.Value.Date == DateTime.UtcNow.Date,
             DefaultCurrency = user.DefaultCurrency,
             CreatedAt = user.CreatedAt,
             LastUpdatedAt = user.LastUpdatedAt
@@ -68,6 +69,7 @@ namespace SE114_MoneyApp_BE.Controllers
                 PhoneNumber = user.PhoneNumber,
                 DailyStreak = displayStreak,
                 TodayCheckedIn = user.LastActiveDate.HasValue && user.LastActiveDate.Value.Date == DateTime.UtcNow.Date,
+                DefaultCurrency = user.DefaultCurrency,
                 CreatedAt = user.CreatedAt,
                 LastUpdatedAt = user.LastUpdatedAt
             };
