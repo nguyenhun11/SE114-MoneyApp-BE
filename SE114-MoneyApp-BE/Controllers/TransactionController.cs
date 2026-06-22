@@ -37,6 +37,7 @@ namespace SE114_MoneyApp_BE.Controllers
             accountColorId = t.Account!.ColorId,
             accountIconId = t.Account!.IconId,
             ImageUrls = t.ImageUrls,
+            MoodId = t.MoodId,
             CreatedAt = DateTime.SpecifyKind(t.CreatedAt, DateTimeKind.Utc),
             LastUpdatedAt = DateTime.SpecifyKind(t.LastUpdatedAt, DateTimeKind.Utc)
         };
