@@ -29,42 +29,63 @@ Clone về máy:
 
 ```bash
 git clone https://github.com/nguyenhun11/SE114-MoneyApp-FE.git
-
 ```
 Chạy file [SE114-MoneyApp-BE.slnx](./SE114-MoneyApp-BE.slnxSE114-MoneyApp-BE.slnx)
 
 ### Bước 2: Thiết lập cấu hình
 
-Dự án yêu cầu các cấu hình nhạy cảm (Chuỗi kết nối DB, Khóa bí mật JWT, Google Client ID) để hoạt động.
+1. Chạy lệnh để tạo `appsettings`
+    ```
+    cp ./SE114-MoneyApp-BE/appsettings.example.json ./SE114-MoneyApp-BE/appsettings.json
+    cp ./SE114-MoneyApp-BE/appsettings.Development.example.json ./SE114-MoneyApp-BE/appsettings.Development.json
+    ```
 
-1. Tìm file `appsettings.json` trong thư mục gốc của Backend.
-2. Đảm bảo nội dung file có cấu trúc tương tự như sau. Khuyến nghị sử dụng cấu trúc `LocalDB` mặc định dưới đây để không bị lỗi bảo mật chứng chỉ `.NET 8`:
-
-```json
-{
-  "ConnectionStrings": {
-    "DefaultConnection": "Server=.;Database=MoneyAppDb;Trusted_Connection=True;TrustServerCertificate=True"
-  },
-  "Logging": {
-    "LogLevel": {
-      "Default": "Information",
-      "Microsoft.AspNetCore": "Warning"
+2. Đảm bảo nội dung `SE114-MoneyApp-BE/appsettings.json` có cấu trúc tương tự như sau:
+    ```
+    {
+      "ConnectionStrings": {
+        "DefaultConnection": "Data Source=SQL1001.site4now.net;Initial Catalog=DATABASE_NAME;User Id=DATABASE_USER_NAME;Password=DATABASE_PASSWORD;Encrypt=True;TrustServerCertificate=True;"
+      },
+      "Logging": {
+        "LogLevel": {
+          "Default": "Information",
+          "Microsoft.AspNetCore": "Warning"
+        }
+      },
+      "GoogleAuth": {
+        "ClientId": "GOOGLE_API_KEY.apps.googleusercontent.com"
+      },
+      "Jwt": {
+        "Secret": "JWT_SECRET",
+        "Issuer": "MoneyAppBackend",
+        "Audience": "MoneyAppAndroid",
+        "AccessTokenExpirationMinutes": 15,
+        "RefreshTokenExpirationDays": 7
+      },
+      "SmtpSettings": {
+        "Host": "smtp.gmail.com",
+        "Port": 587,
+        "Username": "tranlekhanhhung2006@gmail.com",
+        "Password": "SMTP_PASSWORD",
+        "From": "MoneyApp <tranlekhanhhung2006@gmail.com>"
+      },
+      "ExchangeRateApi": {
+        "BaseUrl": "https://v6.exchangerate-api.com/v6/",
+        "ApiKey": "EXCHANGE_RATE_API_KEY",
+        "BaseCurrency": "VND"
+      },
+      "AllowedHosts": "*"
     }
-  },
-  "GoogleAuth": {
-    "ClientId": "YOUR_GOOGLE_WEB_CLIENT_ID.apps.googleusercontent.com"
-  },
-  "Jwt": {
-    "Secret": "Gia_Hung_Khanh_Hung_Quang_Huy_Hoang_Son",
-    "Issuer": "MoneyAppBackend",
-    "Audience": "MoneyAppAndroid",
-    "AccessTokenExpirationMinutes": 15,
-    "RefreshTokenExpirationDays": 7
-  },
-  "AllowedHosts": "*"
-}
+    ```
+    Liên hệ các thành viên trong dự án để thay thế thông tin các biến:
+    - `DATABASE_NAME`
+    - `DATABASE_USER_NAME`
+    - `DATABASE_PASSWORD`
+    - `GOOGLE_API_KEY`
+    - `JWT_SECRET`
+    - `SMTP_PASSWORD`
+    - `EXCHANGE_RATE_API_KEY`
 
-```
 
 ### Bước 3: Phục hồi thư viện và Cập nhật Database
 
