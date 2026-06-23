@@ -19,6 +19,10 @@ namespace SE114_MoneyApp_BE.Data
         public DbSet<Budget> Budgets { get; set; }
         public DbSet<CityState> CityStates { get; set; }
         public DbSet<Building> Buildings { get; set; }
+        public DbSet<Quest> Quests { get; set; }
+        public DbSet<UserQuest> UserQuests { get; set; }
+        public DbSet<Badge> Badges { get; set; }
+        public DbSet<UserBadge> UserBadges { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

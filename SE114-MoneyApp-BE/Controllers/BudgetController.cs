@@ -6,12 +6,20 @@ using SE114_MoneyApp_BE.Data;
 using SE114_MoneyApp_BE.DTOs.Budget;
 using SE114_MoneyApp_BE.Models;
 
+using SE114_MoneyApp_BE.Services;
+
 namespace SE114_MoneyApp_BE.Controllers
 {
     [Route("api/[controller]")]
     public class BudgetController : AuthorizeControllerBase
     {
-        public BudgetController(AppDbContext context, IMemoryCache cache) : base(context, cache) { }
+        private readonly GamificationService _gamificationService;
+
+        public BudgetController(AppDbContext context, IMemoryCache cache, GamificationService gamificationService)
+            : base(context, cache)
+        {
+            _gamificationService = gamificationService;
+        }
 
         [HttpGet]
         public async Task<ActionResult<IEnumerable<BudgetResponse>>> GetBudgets()
@@ -63,6 +71,9 @@ namespace SE114_MoneyApp_BE.Controllers
             _context.Budgets.Add(budget);
             await _context.SaveChangesAsync();
 
+            // Cập nhật tiến độ nhiệm vụ thiết lập ngân sách
+            await _gamificationService.OnBudgetSetup(userId);
+
             return Ok(budget);
         }
 
@@ -81,6 +92,10 @@ namespace SE114_MoneyApp_BE.Controllers
             budget.StartDate = request.StartDate;
 
             await _context.SaveChangesAsync();
+
+            // Cập nhật tiến độ nhiệm vụ cập nhật ngân sách
+            await _gamificationService.OnBudgetSetup(userId);
+
             return NoContent();
         }
 
