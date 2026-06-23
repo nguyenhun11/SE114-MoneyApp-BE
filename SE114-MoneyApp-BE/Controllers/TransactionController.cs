@@ -283,6 +283,7 @@ namespace SE114_MoneyApp_BE.Controllers
             var transaction = await _context.Transactions
                 .Include(t => t.Account)
                 .Include(t => t.Category)
+                    .ThenInclude(c => c.CategoryGroup)
                 .FirstOrDefaultAsync(t => t.Id == id && t.Account!.UserId == userId);
 
             if (transaction == null) return NotFound("Không tìm thấy giao dịch hoặc không có quyền truy cập");
