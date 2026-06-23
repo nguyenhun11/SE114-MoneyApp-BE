@@ -7,7 +7,9 @@ namespace SE114_MoneyApp_BE.Data
     {
         public static async Task SeedDataAsync(AppDbContext context)
         {
-            // Nếu DB đã có dữ liệu thì bỏ qua
+            await SeedQuestsAndBadgesAsync(context);
+
+            // Nếu DB đã có dữ liệu thì bỏ qua phần User/Transaction
             if (await context.Users.AnyAsync()) return;
 
             var baseDate = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc);
@@ -645,6 +647,50 @@ namespace SE114_MoneyApp_BE.Data
             context.Transactions.AddRange(transactions);
 
             // BẮT BUỘC LƯU LẦN CUỐI
+            await context.SaveChangesAsync();
+
+            await SeedQuestsAndBadgesAsync(context);
+        }
+
+        private static async Task SeedQuestsAndBadgesAsync(AppDbContext context)
+        {
+            // Lấy danh sách ID hiện có để tránh trùng lặp
+            var existingQuestIds = await context.Quests.Select(q => q.Id).ToListAsync();
+            var questsToSeed = new List<Quest>
+            {
+                new Quest { Id = "Q_DAILY_01", Title = "Ghi chép chuyên cần", Description = "Nhập ít nhất 3 giao dịch thu/chi", Target = 3, RewardPoints = 5, RewardType = RewardType.SP, ActionType = "AddTransaction" },
+                new Quest { Id = "Q_DAILY_02", Title = "Tiết kiệm là quốc sách", Description = "Nạp tiền vào một mục tiêu bất kỳ", Target = 1, RewardPoints = 20, RewardType = RewardType.PP, ActionType = "GoalDeposited" },
+                new Quest { Id = "Q_DAILY_03", Title = "Kiểm soát ví tiền", Description = "Thiết lập hoặc cập nhật 1 ngân sách", Target = 1, RewardPoints = 10, RewardType = RewardType.SP, ActionType = "BudgetSetup" },
+                new Quest { Id = "Q_DAILY_04", Title = "Phát triển hạ tầng", Description = "Xây dựng hoặc nâng cấp 1 công trình", Target = 1, RewardPoints = 50, RewardType = RewardType.PP, ActionType = "BuildUpgrade" },
+                new Quest { Id = "Q_DAILY_05", Title = "Thị trưởng chăm chỉ", Description = "Điểm danh ngày hôm nay", Target = 1, RewardPoints = 5, RewardType = RewardType.SP, ActionType = "CheckIn" }
+            };
+
+            foreach (var q in questsToSeed)
+            {
+                if (!existingQuestIds.Contains(q.Id)) context.Quests.Add(q);
+            }
+
+            var existingBadgeIds = await context.Badges.Select(b => b.Id).ToListAsync();
+            var badgesToSeed = new List<Badge>
+            {
+                new Badge { Id = "B_STREAK_7", Name = "Thị trưởng Kỷ luật", Description = "Đạt chuỗi điểm danh 7 ngày liên tục", IconKey = "gmd_local_fire_department", ConditionType = "Streak", ConditionValue = 7 },
+                new Badge { Id = "B_SAVER_01", Name = "Chuyên gia Tiết kiệm", Description = "Hoàn thành mục tiêu tiết kiệm đầu tiên", IconKey = "gmd_stars", ConditionType = "GoalCompleted", ConditionValue = 1 },
+                new Badge { Id = "B_BUDGET_KING", Name = "Bậc thầy Chi tiêu", Description = "Kết thúc tháng mà không vượt ngân sách nào", IconKey = "gmd_verified_user", ConditionType = "BudgetMaintained", ConditionValue = 1 },
+                new Badge { Id = "B_CITY_LV5", Name = "Đô thị Sầm uất", Description = "Nâng cấp thành phố lên Cấp 5", IconKey = "gmd_business", ConditionType = "CityLevel", ConditionValue = 5 },
+                new Badge { Id = "B_NEW_BUILDER", Name = "Kiến trúc sư Tập sự", Description = "Xây dựng công trình đầu tiên", IconKey = "gmd_construction", ConditionType = "FirstBuild", ConditionValue = 1 },
+                new Badge { Id = "B_MONEY_BURNER", Name = "Hố không đáy", Description = "Chi tiêu vượt 150% ngân sách tháng", IconKey = "gmd_local_fire_department", ConditionType = "OverBudget", ConditionValue = 150 },
+                new Badge { Id = "B_NIGHT_OWL", Name = "Cú đêm cặm cụi", Description = "Nhập giao dịch trong khoảng 2h - 4h sáng", IconKey = "gmd_nights_stay", ConditionType = "NightOwl", ConditionValue = 1 },
+                new Badge { Id = "B_EMPTY_POCKETS", Name = "Hành khất đô thị", Description = "Tổng số dư tất cả tài khoản về dưới 10,000đ", IconKey = "gmd_sentiment_very_dissatisfied", ConditionType = "LowBalance", ConditionValue = 10000 },
+                new Badge { Id = "B_RICH_KID", Name = "Thiếu gia phố núi", Description = "Nhập một giao dịch chi tiêu > 20 triệu", IconKey = "gmd_attach_money", ConditionType = "BigSpender", ConditionValue = 20000000 },
+                new Badge { Id = "B_LOAN_SHARK", Name = "Chúa tể luân chuyển", Description = "Thực hiện 50 lệnh chuyển khoản trong 1 tháng", IconKey = "gmd_swap_vertical_circle", ConditionType = "TransferKing", ConditionValue = 50 },
+                new Badge { Id = "B_GHOST_TOWN", Name = "Thành phố ma", Description = "Không nhập bất kỳ giao dịch nào trong 1 tuần", IconKey = "gmd_cloud_queue", ConditionType = "Inactivity", ConditionValue = 7 }
+            };
+
+            foreach (var b in badgesToSeed)
+            {
+                if (!existingBadgeIds.Contains(b.Id)) context.Badges.Add(b);
+            }
+
             await context.SaveChangesAsync();
         }
     }
