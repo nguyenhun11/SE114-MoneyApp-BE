@@ -6,12 +6,20 @@ using SE114_MoneyApp_BE.Data;
 using SE114_MoneyApp_BE.DTOs.City;
 using SE114_MoneyApp_BE.Models;
 
+using SE114_MoneyApp_BE.Services;
+
 namespace SE114_MoneyApp_BE.Controllers
 {
     [Route("api/[controller]")]
     public class CityController : AuthorizeControllerBase
     {
-        public CityController(AppDbContext context, IMemoryCache cache) : base(context, cache) { }
+        private readonly GamificationService _gamificationService;
+
+        public CityController(AppDbContext context, IMemoryCache cache, GamificationService gamificationService)
+            : base(context, cache)
+        {
+            _gamificationService = gamificationService;
+        }
 
         [HttpGet]
         public async Task<ActionResult<CityResponse>> GetCity()
@@ -78,6 +86,9 @@ namespace SE114_MoneyApp_BE.Controllers
             _context.Buildings.Add(building);
             await _context.SaveChangesAsync();
 
+            // Cập nhật tiến độ nhiệm vụ xây dựng và kiểm tra huy hiệu
+            await _gamificationService.OnBuildUpgrade(userId);
+
             return Ok(new { Message = "Xây dựng thành công", RemainingProsperity = city.ProsperityPoints });
         }
 
@@ -111,6 +122,9 @@ namespace SE114_MoneyApp_BE.Controllers
             building.Level += 1;
 
             await _context.SaveChangesAsync();
+
+            // Cập nhật tiến độ nhiệm vụ nâng cấp và kiểm tra huy hiệu
+            await _gamificationService.OnBuildUpgrade(userId);
 
             return Ok(new
             {

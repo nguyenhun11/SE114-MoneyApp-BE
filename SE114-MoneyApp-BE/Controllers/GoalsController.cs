@@ -139,6 +139,9 @@ namespace SE114_MoneyApp_BE.Controllers
             goal.CurrentAmount += request.Amount;
             await _context.SaveChangesAsync();
 
+            // Cập nhật tiến độ nhiệm vụ nạp tiền
+            await _gamificationService.OnGoalDeposited(userId);
+
             // Kiểm tra hoàn thành mục tiêu để cộng điểm MoneyCity
             if (goal.CurrentAmount >= goal.TargetAmount)
             {

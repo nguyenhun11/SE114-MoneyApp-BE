@@ -4,6 +4,7 @@ using Microsoft.Extensions.Caching.Memory;
 using SE114_MoneyApp_BE.Controllers.Base;
 using SE114_MoneyApp_BE.Data;
 using SE114_MoneyApp_BE.DTOs.User;
+using SE114_MoneyApp_BE.DTOs.Badge;
 using SE114_MoneyApp_BE.Models;
 using SE114_MoneyApp_BE.Services;
 using System.Linq.Expressions;
@@ -392,6 +393,37 @@ namespace SE114_MoneyApp_BE.Controllers
             }
 
             return BadRequest(new { Message = "Chuỗi của bạn chưa bị đứt, không cần khôi phục!" });
+        }
+
+        // GET: api/User/badges
+        /// <summary>
+        /// Lấy danh sách huy hiệu
+        /// </summary>
+        [HttpGet("badges")]
+        public async Task<ActionResult<IEnumerable<BadgeResponse>>> GetBadges()
+        {
+            var (userId, success, message) = GetCurrentUserId();
+            if (!success) return Unauthorized(new { Message = message });
+
+            var allBadges = await _context.Badges.ToListAsync();
+            var userBadges = await _context.UserBadges
+                .Where(ub => ub.UserId == userId)
+                .ToListAsync();
+
+            var response = allBadges.Select(b => {
+                var ub = userBadges.FirstOrDefault(x => x.BadgeId == b.Id);
+                return new BadgeResponse
+                {
+                    BadgeId = b.Id,
+                    Name = b.Name,
+                    Description = b.Description,
+                    IconKey = b.IconKey,
+                    IsUnlocked = ub != null,
+                    UnlockedAt = ub?.UnlockedAt
+                };
+            });
+
+            return Ok(response);
         }
     }
 }
