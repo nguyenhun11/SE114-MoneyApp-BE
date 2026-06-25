@@ -5,6 +5,7 @@ using Microsoft.Extensions.Caching.Memory;
 using SE114_MoneyApp_BE.Controllers.Base;
 using SE114_MoneyApp_BE.Data;
 using SE114_MoneyApp_BE.DTOs.Category;
+using SE114_MoneyApp_BE.DTOs.Budget;
 using SE114_MoneyApp_BE.Models;
 using System.Linq.Expressions;
 using System.Security.Claims;
@@ -21,7 +22,6 @@ namespace SE114_MoneyApp_BE.Controllers
             Id = c.Id,
             CategoryName = c.CategoryName,
             Type = c.CategoryGroup!.Type,
-            MonthlyTarget = c.MonthlyTarget,
             CategoryGroupId = c.CategoryGroupId,
             GroupName = c.CategoryGroup!.GroupName,
             ColorId = c.ColorId,
@@ -41,7 +41,7 @@ namespace SE114_MoneyApp_BE.Controllers
             }
 
             var categories = await _context.Categories
-                .Where(c => c.CategoryGroup!.Type == type 
+                .Where(c => c.CategoryGroup!.Type == type
                     && c.IsActive && c.CategoryGroup!.IsActive
                     && c.UserId == userId)
                 .OrderBy(c => c.CategoryGroup!.SortingOrder)
@@ -76,7 +76,7 @@ namespace SE114_MoneyApp_BE.Controllers
 
         // GET: api/Category/...
         /// <summary>
-        /// Chi tiết một hạng mục theo Id
+        /// Chi tiết một hạng mục theo Id (Có đính kèm danh sách Ngân sách)
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
@@ -88,19 +88,33 @@ namespace SE114_MoneyApp_BE.Controllers
             {
                 return Unauthorized(new { Message = message });
             }
-            var category = await _context.Categories
+
+            var categoryResponse = await _context.Categories
                 .Where(c => c.Id == id && c.UserId == userId && c.IsActive)
                 .Select(MapToCategoryResponse)
                 .FirstOrDefaultAsync();
 
-            if (category == null)
+            if (categoryResponse == null)
             {
-                return NotFound(new
-                {
-                    Message = "Không tìm thấy hạng mục"
-                });
+                return NotFound(new { Message = "Không tìm thấy hạng mục" });
             }
-            return Ok(category);
+
+            var activeBudgets = await _context.Budgets
+                .Where(b => b.CategoryId == id && b.IsActive)
+                .Select(b => new BudgetResponse
+                {
+                    Id = b.Id,
+                    CategoryId = b.CategoryId,
+                    CategoryName = categoryResponse.CategoryName,
+                    Amount = b.Amount,
+                    Period = b.Period,
+                    StartDate = b.StartDate,
+                    IsActive = b.IsActive
+                }).ToListAsync();
+
+            categoryResponse.ActiveBudgets = activeBudgets;
+
+            return Ok(categoryResponse);
         }
 
         /// <summary>
@@ -147,8 +161,8 @@ namespace SE114_MoneyApp_BE.Controllers
 
             var group = await _context.CategoryGroups
                 .Where(g => g.Id == request.CategoryGroupId
-                            && g.IsActive
-                            && g.UserId == userId)
+                             && g.IsActive
+                             && g.UserId == userId)
                 .FirstOrDefaultAsync();
             if (group == null)
             {
@@ -167,13 +181,28 @@ namespace SE114_MoneyApp_BE.Controllers
                 CategoryGroupId = request.CategoryGroupId,
                 CategoryGroup = group,
                 CategoryName = request.CategoryName,
-                MonthlyTarget = request.MonthlyTarget,
                 ColorId = request.ColorId,
                 IconId = request.IconId,
                 SortingOrder = nextOrder
             };
 
             _context.Categories.Add(category);
+
+            if (request.BudgetSetup != null && request.BudgetSetup.Amount > 0)
+            {
+                var budget = new Budget
+                {
+                    UserId = userId,
+                    CategoryId = category.Id, // Ép cứng ID của hạng mục vừa tạo
+                    CategoryGroupId = category.CategoryGroupId,
+                    Amount = request.BudgetSetup.Amount,
+                    Period = request.BudgetSetup.Period,
+                    StartDate = request.BudgetSetup.StartDate,
+                    CreatedAt = DateTime.UtcNow
+                };
+                _context.Budgets.Add(budget);
+            }
+
             await _context.SaveChangesAsync();
 
             var response = MapToCategoryResponse.Compile().Invoke(category);
@@ -217,9 +246,9 @@ namespace SE114_MoneyApp_BE.Controllers
 
             var category = await _context.Categories
                 .Where(c => c.Id == id
-                            && c.UserId == userId
-                            && c.CategoryGroup!.Type == type
-                            && c.IsActive)
+                             && c.UserId == userId
+                             && c.CategoryGroup!.Type == type
+                             && c.IsActive)
                 .FirstOrDefaultAsync();
 
             if (category == null)
@@ -230,9 +259,9 @@ namespace SE114_MoneyApp_BE.Controllers
             if (category.CategoryGroupId != request.CategoryGroupId)
             {
                 var newGroup = await _context.CategoryGroups
-                                    .FirstOrDefaultAsync(g => g.Id == request.CategoryGroupId 
-                                                            && g.UserId == userId 
-                                                            && g.IsActive 
+                                    .FirstOrDefaultAsync(g => g.Id == request.CategoryGroupId
+                                                            && g.UserId == userId
+                                                            && g.IsActive
                                                             && g.Type == type);
                 if (newGroup == null)
                 {
@@ -244,10 +273,16 @@ namespace SE114_MoneyApp_BE.Controllers
 
                 category.CategoryGroupId = request.CategoryGroupId;
                 category.SortingOrder = await NormalizeAndGetNextSortingOrderAsync(userId, request.CategoryGroupId);
+
+                var linkedBudgets = await _context.Budgets.Where(b => b.CategoryId == id && b.IsActive).ToListAsync();
+                foreach (var budget in linkedBudgets)
+                {
+                    budget.CategoryGroupId = request.CategoryGroupId;
+                }
             }
 
             category.CategoryName = request.CategoryName;
-            category.MonthlyTarget = request.MonthlyTarget;
+            // ĐÃ XÓA: category.MonthlyTarget = request.MonthlyTarget;
             category.ColorId = request.ColorId;
             category.IconId = request.IconId;
             category.LastUpdatedAt = DateTime.UtcNow;
@@ -388,9 +423,9 @@ namespace SE114_MoneyApp_BE.Controllers
                     }
 
                     var fallbackCategory = await _context.Categories
-                        .FirstOrDefaultAsync(c => c.Id == fallbackCategoryId.Value 
-                                            && c.UserId == userId 
-                                            && c.IsActive);
+                        .FirstOrDefaultAsync(c => c.Id == fallbackCategoryId.Value
+                                                && c.UserId == userId
+                                                && c.IsActive);
 
                     if (fallbackCategory == null || fallbackCategory.CategoryGroup!.Type != categoryToDelete.CategoryGroup!.Type)
                     {
@@ -420,8 +455,15 @@ namespace SE114_MoneyApp_BE.Controllers
                 default:
                     break;
             }
-            
-            // Luôn xóa mềm
+
+            // Xóa mềm các Ngân sách liên kết với Hạng mục này
+            var linkedBudgets = await _context.Budgets.Where(b => b.CategoryId == id && b.IsActive).ToListAsync();
+            foreach (var budget in linkedBudgets)
+            {
+                budget.IsActive = false;
+            }
+
+            // Luôn xóa mềm hạng mục
             categoryToDelete.IsActive = false;
             categoryToDelete.LastUpdatedAt = DateTime.UtcNow;
 

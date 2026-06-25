@@ -41,6 +41,7 @@ namespace SE114_MoneyApp_BE.Controllers
 
             return Ok(categoryGroups);
         }
+
         /// <summary>
         /// Danh sách nhóm hạng mục chi tiêu
         /// </summary>
@@ -50,6 +51,7 @@ namespace SE114_MoneyApp_BE.Controllers
         {
             return await GetCategoryGroups(CategoryType.Expense);
         }
+
         /// <summary>
         /// Danh sách nhóm hạng mục thu nhập
         /// </summary>
@@ -99,6 +101,22 @@ namespace SE114_MoneyApp_BE.Controllers
             };
 
             _context.CategoryGroups.Add(newGroup);
+
+            if (request.BudgetSetup != null && request.BudgetSetup.Amount > 0)
+            {
+                var budget = new Budget
+                {
+                    UserId = userId,
+                    CategoryGroupId = newGroup.Id, // Link với nhóm
+                    CategoryId = null, // NULL = Đây là ngân sách của Nhóm, không phải của hạng mục lẻ
+                    Amount = request.BudgetSetup.Amount,
+                    Period = request.BudgetSetup.Period,
+                    StartDate = request.BudgetSetup.StartDate,
+                    CreatedAt = DateTime.UtcNow
+                };
+                _context.Budgets.Add(budget);
+            }
+
             await _context.SaveChangesAsync();
 
             var response = new CategoryGroupResponse
@@ -123,6 +141,7 @@ namespace SE114_MoneyApp_BE.Controllers
         {
             return await CreateCategoryGroup(CategoryType.Expense, request);
         }
+
         /// <summary>
         /// Tạo nhóm hạng mục thu nhập
         /// </summary>
@@ -218,6 +237,8 @@ namespace SE114_MoneyApp_BE.Controllers
 
             var categories = await _context.Categories.Where(c => c.CategoryGroupId == id && c.UserId == userId && c.IsActive).ToListAsync();
 
+            var relatedBudgets = await _context.Budgets.Where(b => b.CategoryGroupId == id && b.IsActive).ToListAsync();
+
             if (mode == "move")
             {
                 if (!fallbackGroupId.HasValue || fallbackGroupId == group.Id)
@@ -239,7 +260,19 @@ namespace SE114_MoneyApp_BE.Controllers
                 foreach (var category in categories)
                 {
                     category.CategoryGroupId = fallbackGroupId.Value;
-                    category.LastUpdatedAt = DateTime.UtcNow; // Nhớ update giờ
+                    category.LastUpdatedAt = DateTime.UtcNow;
+                }
+
+                // Cập nhật lại ID nhóm cho các Ngân Sách của HẠNG MỤC CON để nó "đi theo" sang nhóm mới
+                foreach (var budget in relatedBudgets.Where(b => b.CategoryId != null))
+                {
+                    budget.CategoryGroupId = fallbackGroupId.Value;
+                }
+
+                // Xóa mềm Ngân sách của CHÍNH NHÓM BỊ XÓA (CategoryId == null)
+                foreach (var budget in relatedBudgets.Where(b => b.CategoryId == null))
+                {
+                    budget.IsActive = false;
                 }
             }
             else
@@ -248,6 +281,12 @@ namespace SE114_MoneyApp_BE.Controllers
                 {
                     category.IsActive = false;
                     category.LastUpdatedAt = DateTime.UtcNow;
+                }
+
+                // Xóa mềm TOÀN BỘ ngân sách liên quan (Cả nhóm và con)
+                foreach (var budget in relatedBudgets)
+                {
+                    budget.IsActive = false;
                 }
             }
 

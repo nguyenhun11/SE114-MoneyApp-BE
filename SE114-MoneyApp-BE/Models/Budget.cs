@@ -16,6 +16,7 @@ namespace SE114_MoneyApp_BE.Models
         public int Id { get; set; }
 
         public int UserId { get; set; }
+        public Guid? CategoryGroupId { get; set; } // Ngân sách cho nhóm hạng mục
 
         public Guid? CategoryId { get; set; } // Nếu null thì là ngân sách tổng
 
@@ -35,5 +36,7 @@ namespace SE114_MoneyApp_BE.Models
 
         [ForeignKey("CategoryId")]
         public Category? Category { get; set; }
+        [ForeignKey("CategoryGroupId")]
+        public CategoryGroup? CategoryGroup { get; set; }
     }
 }
