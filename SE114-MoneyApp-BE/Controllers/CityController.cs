@@ -64,14 +64,42 @@ namespace SE114_MoneyApp_BE.Controllers
             var city = await _context.CityStates.FirstOrDefaultAsync(c => c.UserId == userId);
             if (city == null) return BadRequest("City not found");
 
-            // Chi phí xây dựng cơ bản: 100 PP
-            int cost = 100;
-            if (city.ProsperityPoints < cost)
+            int cost = 0;
+            bool useSP = false;
+
+            // Xác định chi phí và loại điểm sử dụng dựa trên BuildingType
+            switch (request.BuildingType.ToLower())
             {
-                return BadRequest(new { Message = "Insufficient Prosperity Points" });
+                case "bench": cost = 5; useSP = true; break;
+                case "road": cost = 10; useSP = true; break;
+                case "flower_bed": cost = 10; useSP = true; break;
+                case "street_light": cost = 15; useSP = true; break;
+                case "tree": cost = 20; useSP = true; break;
+                case "park": cost = 50; useSP = true; break;
+                case "fountain": cost = 80; useSP = true; break;
+                case "statue": cost = 150; useSP = true; break;
+                default:
+                    cost = 100; // Chi phí PP cho các công trình thông thường
+                    useSP = false;
+                    break;
             }
 
-            city.ProsperityPoints -= cost;
+            if (useSP)
+            {
+                if (city.StabilityPoints < cost)
+                {
+                    return BadRequest(new { Message = "Không đủ điểm Stability (SP)" });
+                }
+                city.StabilityPoints -= cost;
+            }
+            else
+            {
+                if (city.ProsperityPoints < cost)
+                {
+                    return BadRequest(new { Message = "Không đủ điểm Prosperity (PP)" });
+                }
+                city.ProsperityPoints -= cost;
+            }
 
             var building = new Building
             {
@@ -89,7 +117,12 @@ namespace SE114_MoneyApp_BE.Controllers
             // Cập nhật tiến độ nhiệm vụ xây dựng và kiểm tra huy hiệu
             await _gamificationService.OnBuildUpgrade(userId);
 
-            return Ok(new { Message = "Xây dựng thành công", RemainingProsperity = city.ProsperityPoints });
+            return Ok(new
+            {
+                Message = "Xây dựng thành công",
+                RemainingProsperity = city.ProsperityPoints,
+                RemainingStability = city.StabilityPoints
+            });
         }
 
         [HttpPost("upgrade/{id}")]
@@ -105,6 +138,13 @@ namespace SE114_MoneyApp_BE.Controllers
                 .FirstOrDefaultAsync(b => b.Id == id && b.CityStateId == city.Id);
 
             if (building == null) return NotFound(new { Message = "Building not found" });
+
+            // Kiểm tra nếu là vật phẩm trang trí thì không cho nâng cấp
+            var decorativeTypes = new[] { "road", "tree", "park", "fountain", "bench", "street_light", "flower_bed", "statue" };
+            if (decorativeTypes.Contains(building.BuildingType.ToLower()))
+            {
+                return BadRequest(new { Message = "Vật phẩm trang trí không thể nâng cấp" });
+            }
 
             int currentLevel = building.Level;
             int upgradeCost = 0;
