@@ -84,34 +84,42 @@ namespace SE114_MoneyApp_BE.Controllers
         public async Task<ActionResult<CategoryResponse>> GetCategoryById(Guid id)
         {
             var (userId, success, message) = GetCurrentUserId();
-            if (!success)
-            {
-                return Unauthorized(new { Message = message });
-            }
+            if (!success) return Unauthorized(new { Message = message });
 
+            // 1. Lấy thông tin cơ bản của Category
             var categoryResponse = await _context.Categories
                 .Where(c => c.Id == id && c.UserId == userId && c.IsActive)
                 .Select(MapToCategoryResponse)
                 .FirstOrDefaultAsync();
 
-            if (categoryResponse == null)
-            {
-                return NotFound(new { Message = "Không tìm thấy hạng mục" });
-            }
+            if (categoryResponse == null) return NotFound(new { Message = "Không tìm thấy hạng mục" });
 
-            var activeBudgets = await _context.Budgets
+            // 2. Kéo raw data Ngân sách từ DB lên
+            var rawBudgets = await _context.Budgets
                 .Where(b => b.CategoryId == id && b.IsActive)
-                .Select(b => new BudgetResponse
+                .ToListAsync();
+
+            // 3. ĐÃ SỬA: Chạy vòng lặp để TÍNH TOÁN thực tế cho từng Ngân sách
+            var activeBudgets = new List<BudgetResponse>();
+            foreach (var b in rawBudgets)
+            {
+                var (usedAmount, cycleIndex) = await CalculateUsedAmountAndCycleIndex(b);
+
+                activeBudgets.Add(new BudgetResponse
                 {
                     Id = b.Id,
                     CategoryId = b.CategoryId,
                     CategoryName = categoryResponse.CategoryName,
                     Amount = b.Amount,
+                    UsedAmount = usedAmount, // Gán số tiền thực tế vào đây!
                     Period = b.Period,
                     StartDate = b.StartDate,
-                    IsActive = b.IsActive
-                }).ToListAsync();
+                    IsActive = b.IsActive,
+                    CurrentCycleIndex = cycleIndex // Gán chu kỳ thực tế
+                });
+            }
 
+            // 4. Đính kèm vào kết quả trả về
             categoryResponse.ActiveBudgets = activeBudgets;
 
             return Ok(categoryResponse);
@@ -493,6 +501,95 @@ namespace SE114_MoneyApp_BE.Controllers
 
             if (isChanged) await _context.SaveChangesAsync();
             return categories.Count;
+        }
+
+        // =================================================================================
+        // THUẬT TOÁN TÍNH TOÁN DÀNH CHO CATEGORY CONTROLLER
+        // =================================================================================
+        private async Task<(decimal usedAmount, int cycleIndex)> CalculateUsedAmountAndCycleIndex(Budget budget)
+        {
+            var (currentCycleStart, currentCycleEnd, cycleIndex) = GetCurrentCycle(budget.StartDate, budget.Period);
+
+            var query = _context.Transactions
+                .Where(t => t.Account!.UserId == budget.UserId
+                         && t.TransactionDate >= currentCycleStart
+                         && t.TransactionDate < currentCycleEnd);
+
+            if (budget.CategoryId.HasValue)
+            {
+                query = query.Where(t => t.CategoryId == budget.CategoryId.Value);
+            }
+            else if (budget.CategoryGroupId.HasValue)
+            {
+                query = query.Include(t => t.Category)
+                             .Where(t => t.Category!.CategoryGroupId == budget.CategoryGroupId.Value);
+            }
+            else
+            {
+                query = query.Include(t => t.Category).ThenInclude(c => c!.CategoryGroup)
+                             .Where(t => t.Category!.CategoryGroup!.Type == CategoryType.Expense);
+            }
+
+            decimal usedAmount = await query.SumAsync(t => Math.Abs(t.BaseAmount));
+            return (usedAmount, cycleIndex);
+        }
+
+        private (DateTime start, DateTime end, int cycleIndex) GetCurrentCycle(DateTime anchorDate, BudgetPeriod period)
+        {
+            var now = DateTime.UtcNow;
+            DateTime currentStart = anchorDate;
+            DateTime currentEnd;
+            int cycleIndex = 0;
+
+            if (now < anchorDate)
+            {
+                switch (period)
+                {
+                    case BudgetPeriod.Weekly: return (anchorDate, anchorDate.AddDays(7), 0);
+                    case BudgetPeriod.Yearly: return (anchorDate, anchorDate.AddYears(1), 0);
+                    default: return (anchorDate, anchorDate.AddMonths(1), 0);
+                }
+            }
+
+            switch (period)
+            {
+                case BudgetPeriod.Weekly:
+                    int daysSinceAnchor = (now - anchorDate).Days;
+                    cycleIndex = daysSinceAnchor / 7;
+                    currentStart = anchorDate.AddDays(cycleIndex * 7);
+                    currentEnd = currentStart.AddDays(7);
+                    break;
+
+                case BudgetPeriod.Monthly:
+                    cycleIndex = ((now.Year - anchorDate.Year) * 12) + now.Month - anchorDate.Month;
+                    currentStart = anchorDate.AddMonths(cycleIndex);
+
+                    if (currentStart > now)
+                    {
+                        currentStart = currentStart.AddMonths(-1);
+                        cycleIndex--;
+                    }
+                    currentEnd = currentStart.AddMonths(1);
+                    break;
+
+                case BudgetPeriod.Yearly:
+                    cycleIndex = now.Year - anchorDate.Year;
+                    currentStart = anchorDate.AddYears(cycleIndex);
+
+                    if (currentStart > now)
+                    {
+                        currentStart = currentStart.AddYears(-1);
+                        cycleIndex--;
+                    }
+                    currentEnd = currentStart.AddYears(1);
+                    break;
+
+                default:
+                    currentEnd = currentStart.AddMonths(1);
+                    break;
+            }
+
+            return (currentStart, currentEnd, cycleIndex + 1);
         }
 
     }
