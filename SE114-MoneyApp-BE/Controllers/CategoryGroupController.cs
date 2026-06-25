@@ -107,11 +107,11 @@ namespace SE114_MoneyApp_BE.Controllers
                 var budget = new Budget
                 {
                     UserId = userId,
-                    CategoryGroupId = newGroup.Id, // Link với nhóm
-                    CategoryId = null, // NULL = Đây là ngân sách của Nhóm, không phải của hạng mục lẻ
+                    CategoryGroupId = newGroup.Id,
+                    CategoryId = null,
                     Amount = request.BudgetSetup.Amount,
                     Period = request.BudgetSetup.Period,
-                    StartDate = request.BudgetSetup.StartDate,
+                    StartDate = DateTime.UtcNow,
                     CreatedAt = DateTime.UtcNow
                 };
                 _context.Budgets.Add(budget);
