@@ -35,7 +35,6 @@ namespace SE114_MoneyApp_BE.Controllers
             var response = new List<BudgetResponse>();
             foreach (var budget in budgets)
             {
-                // ĐÃ SỬA: Lấy thêm index của chu kỳ hiện tại
                 var (usedAmount, cycleIndex) = await CalculateUsedAmountAndCycleIndex(budget);
 
                 response.Add(new BudgetResponse
@@ -49,14 +48,131 @@ namespace SE114_MoneyApp_BE.Controllers
                     Period = budget.Period,
                     StartDate = budget.StartDate,
                     IsActive = budget.IsActive,
-                    CurrentCycleIndex = cycleIndex // Gán vào Response
+                    CurrentCycleIndex = cycleIndex
                 });
             }
 
             return Ok(response);
         }
 
-        // ... (Các hàm POST, PUT, DELETE giữ nguyên) ...
+        [HttpPost]
+        public async Task<ActionResult<BudgetResponse>> CreateBudget(BudgetRequest request)
+        {
+            var (userId, success, message) = GetCurrentUserId();
+            if (!success) return Unauthorized(new { Message = message });
+
+            var budget = new Budget
+            {
+                UserId = userId,
+                Amount = request.Amount,
+                Period = request.Period,
+                StartDate = request.StartDate,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            // LOGIC ÉP CHUẨN HOÁ 3 CẤP (Tuyệt đối không để chứa cả 2 ID)
+            if (request.CategoryId.HasValue)
+            {
+                budget.CategoryId = request.CategoryId;
+                budget.CategoryGroupId = null;
+            }
+            else if (request.CategoryGroupId.HasValue)
+            {
+                budget.CategoryId = null;
+                budget.CategoryGroupId = request.CategoryGroupId;
+            }
+            else
+            {
+                budget.CategoryId = null;
+                budget.CategoryGroupId = null;
+            }
+
+            _context.Budgets.Add(budget);
+            await _context.SaveChangesAsync();
+
+            await _gamificationService.OnBudgetSetup(userId);
+
+            // Truy vấn lấy tên để trả về DTO cho đẹp
+            string categoryName = "Ngân sách tổng";
+            if (budget.CategoryId.HasValue)
+            {
+                var cat = await _context.Categories.FindAsync(budget.CategoryId.Value);
+                categoryName = cat?.CategoryName ?? "Hạng mục";
+            }
+            else if (budget.CategoryGroupId.HasValue)
+            {
+                var grp = await _context.CategoryGroups.FindAsync(budget.CategoryGroupId.Value);
+                categoryName = grp?.GroupName ?? "Nhóm";
+            }
+
+            // TRẢ VỀ DTO (Tránh lỗi 500 vòng lặp vô tận của Entity)
+            var responseDto = new BudgetResponse
+            {
+                Id = budget.Id,
+                CategoryGroupId = budget.CategoryGroupId,
+                CategoryId = budget.CategoryId,
+                CategoryName = categoryName,
+                Amount = budget.Amount,
+                UsedAmount = 0, // Mới tạo thì chưa tính toán làm gì cho nặng
+                Period = budget.Period,
+                StartDate = budget.StartDate,
+                IsActive = budget.IsActive,
+                CurrentCycleIndex = 1
+            };
+
+            return Ok(responseDto);
+        }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateBudget(int id, BudgetRequest request)
+        {
+            var (userId, success, message) = GetCurrentUserId();
+            if (!success) return Unauthorized(new { Message = message });
+
+            var budget = await _context.Budgets.FirstOrDefaultAsync(b => b.Id == id && b.UserId == userId && b.IsActive);
+            if (budget == null) return NotFound(new { Message = "Không tìm thấy ngân sách" });
+
+            budget.Amount = request.Amount;
+            budget.Period = request.Period;
+            budget.StartDate = request.StartDate;
+
+            // LOGIC ÉP CHUẨN HOÁ 3 CẤP CHO UPDATE
+            if (request.CategoryId.HasValue)
+            {
+                budget.CategoryId = request.CategoryId;
+                budget.CategoryGroupId = null;
+            }
+            else if (request.CategoryGroupId.HasValue)
+            {
+                budget.CategoryId = null;
+                budget.CategoryGroupId = request.CategoryGroupId;
+            }
+            else
+            {
+                budget.CategoryId = null;
+                budget.CategoryGroupId = null;
+            }
+
+            await _context.SaveChangesAsync();
+
+            await _gamificationService.OnBudgetSetup(userId);
+            return NoContent();
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteBudget(int id)
+        {
+            var (userId, success, message) = GetCurrentUserId();
+            if (!success) return Unauthorized(new { Message = message });
+
+            var budget = await _context.Budgets.FirstOrDefaultAsync(b => b.Id == id && b.UserId == userId && b.IsActive);
+            if (budget == null) return NotFound(new { Message = "Không tìm thấy ngân sách" });
+
+            budget.IsActive = false;
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
 
         // =================================================================================
         // THUẬT TOÁN TÍNH TOÁN (Trả về lượng tiền đã dùng + Số thứ tự chu kỳ)
@@ -97,11 +213,10 @@ namespace SE114_MoneyApp_BE.Controllers
             var now = DateTime.UtcNow;
             DateTime currentStart = anchorDate;
             DateTime currentEnd;
-            int cycleIndex = 0; // Khởi tạo số đếm
+            int cycleIndex = 0;
 
             if (now < anchorDate)
             {
-                // Chưa tới ngày bắt đầu -> Chu kỳ 0
                 switch (period)
                 {
                     case BudgetPeriod.Weekly: return (anchorDate, anchorDate.AddDays(7), 0);
@@ -114,7 +229,7 @@ namespace SE114_MoneyApp_BE.Controllers
             {
                 case BudgetPeriod.Weekly:
                     int daysSinceAnchor = (now - anchorDate).Days;
-                    cycleIndex = daysSinceAnchor / 7; // Số tuần đã trôi qua
+                    cycleIndex = daysSinceAnchor / 7;
                     currentStart = anchorDate.AddDays(cycleIndex * 7);
                     currentEnd = currentStart.AddDays(7);
                     break;
@@ -126,7 +241,7 @@ namespace SE114_MoneyApp_BE.Controllers
                     if (currentStart > now)
                     {
                         currentStart = currentStart.AddMonths(-1);
-                        cycleIndex--; // Lùi lại 1 chu kỳ
+                        cycleIndex--;
                     }
                     currentEnd = currentStart.AddMonths(1);
                     break;
@@ -148,7 +263,6 @@ namespace SE114_MoneyApp_BE.Controllers
                     break;
             }
 
-            // cycleIndex + 1 vì nếu vừa tạo thì tính là chu kỳ thứ 1 đang chạy
             return (currentStart, currentEnd, cycleIndex + 1);
         }
     }
