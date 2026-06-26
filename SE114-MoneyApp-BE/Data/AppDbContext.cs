@@ -83,6 +83,12 @@ namespace SE114_MoneyApp_BE.Data
                 .WithMany(g => g.Categories)
                 .HasForeignKey(c => c.CategoryGroupId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<GoalRecord>()
+                .HasOne(gr => gr.Account)
+                .WithMany()
+                .HasForeignKey(gr => gr.AccountId)
+                .OnDelete(DeleteBehavior.NoAction);
         }
     }
 }
