@@ -195,15 +195,57 @@ namespace SE114_MoneyApp_BE.Controllers
                          && t.TransactionDate < utcEnd)
                 .ToListAsync();
 
-            var cashFlow = transactions
+            // 2. LẤY LỊCH SỬ NẠP/RÚT TIẾT KIỆM (GOAL RECORDS)
+            var goalRecords = await _context.GoalRecords
+                .Include(r => r.Goal)
+                .Where(r => r.Goal!.UserId == userId
+                         && r.CreatedAt >= utcStart
+                         && r.CreatedAt < utcEnd)
+                .ToListAsync();
+
+            // Map Transactions
+            var groupedTransactions = transactions
                 .GroupBy(t => GetPeriodLabel(t.TransactionDate.AddHours(timeZoneOffset), groupBy))
-                .Select(g => new CashFlowBarChartDto
+                .Select(g => new
                 {
                     Period = g.Key,
+                    DateSort = g.First().TransactionDate, // Dùng để sort
                     TotalIncome = Math.Abs(g.Where(t => t.Category!.CategoryGroup!.Type == CategoryType.Income).Sum(t => t.BaseAmount)),
-                    TotalExpense = Math.Abs(g.Where(t => t.Category!.CategoryGroup!.Type == CategoryType.Expense).Sum(t => t.BaseAmount))
+                    TotalExpense = Math.Abs(g.Where(t => t.Category!.CategoryGroup!.Type == CategoryType.Expense).Sum(t => t.BaseAmount)),
+                    TotalSaved = 0m,
+                    TotalWithdrawn = 0m
                 })
-                .OrderBy(x => transactions.First(t => GetPeriodLabel(t.TransactionDate.AddHours(timeZoneOffset), groupBy) == x.Period).TransactionDate)
+                .ToList();
+
+            // Map GoalRecords
+            var groupedGoals = goalRecords
+                .GroupBy(r => GetPeriodLabel(r.CreatedAt.AddHours(timeZoneOffset), groupBy))
+                .Select(g => new
+                {
+                    Period = g.Key,
+                    DateSort = g.First().CreatedAt,
+                    TotalIncome = 0m,
+                    TotalExpense = 0m,
+                    TotalSaved = g.Where(r => r.Type == "Deposit").Sum(r => r.Amount), // Tiền nạp vào ống
+                    TotalWithdrawn = g.Where(r => r.Type == "Withdraw").Sum(r => r.Amount) // Tiền đập ống rút ra
+                })
+                .ToList();
+
+            // 4. TRỘN (MERGE) VÀ TÍNH TỔNG DÒNG TIỀN
+            // Chúng ta gộp 2 List lại, sau đó Group By Period một lần nữa để cộng dồn
+            var combinedList = groupedTransactions.Concat(groupedGoals).ToList();
+
+            var cashFlow = combinedList
+                .GroupBy(c => c.Period)
+                .Select(g => new CashFlowBarChartDto // Đừng quên thêm 2 property này vào DTO nhé!
+                {
+                    Period = g.Key,
+                    TotalIncome = g.Sum(x => x.TotalIncome),
+                    TotalExpense = g.Sum(x => x.TotalExpense),
+                    TotalSaved = g.Sum(x => x.TotalSaved), 
+                    TotalWithdrawn = g.Sum(x => x.TotalWithdrawn)
+                })
+                .OrderBy(x => combinedList.First(c => c.Period == x.Period).DateSort) // Sort theo thời gian thật
                 .ToList();
 
             return Ok(cashFlow);

@@ -24,7 +24,9 @@ namespace SE114_MoneyApp_BE.Controllers
             AccountName = account.AccountName,
             ColorId = account.ColorId,
             IconId = account.IconId,
-            Balance = account.Balance,
+            TotalBalance = account.Balance,
+            LockedBalance = account.LockedBalance,
+            AvailableBalance = account.Balance - account.LockedBalance,
             CurrencyCode = account.CurrencyCode,
             Description = account.Description,
             IncludeInTotalBalance = account.IncludeInTotalBalance,
@@ -179,6 +181,10 @@ namespace SE114_MoneyApp_BE.Controllers
                 .FirstOrDefaultAsync(a => a.Id == id && a.UserId == userId && a.IsActive);
 
             if (account == null) return NotFound(new { Message = "Tài khoản không tồn tại" });
+            if (request.Balance < account.LockedBalance)
+            {
+                return BadRequest(new { Message = $"Số dư tổng không thể nhỏ hơn số tiền đang được khóa trong tiết kiệm ({account.LockedBalance} {account.CurrencyCode})." });
+            }
 
             account.AccountName = request.AccountName;
             account.ColorId = request.ColorId;
@@ -266,6 +272,10 @@ namespace SE114_MoneyApp_BE.Controllers
                 .FirstOrDefaultAsync(a => a.Id == id && a.UserId == userId && a.IsActive);
 
             if (accountToDelete == null) return NotFound(new { Message = "Không tìm thấy tài khoản" });
+            if (accountToDelete.LockedBalance > 0)
+            {
+                return BadRequest(new { Message = "Tài khoản này đang có tiền khóa trong mục tiêu tiết kiệm. Vui lòng rút tiền về trước khi thực hiện xóa hoặc chuyển đổi." });
+            }
 
             var transactions = await _context.Transactions.Where(t => t.AccountId == id).ToListAsync();
             var adjustBalances = await _context.AdjustBalances.Where(ab => ab.AccountId == id).ToListAsync();

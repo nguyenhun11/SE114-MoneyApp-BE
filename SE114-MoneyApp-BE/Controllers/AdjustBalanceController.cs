@@ -81,6 +81,16 @@ namespace SE114_MoneyApp_BE.Controllers
 
             if (account == null) return NotFound(new { Message = "Không tìm thấy tài khoản." });
 
+            var simulatedNewBalance = account.Balance + request.Amount; // Amount có thể là số âm (giảm trừ)
+
+            if (simulatedNewBalance < account.LockedBalance)
+            {
+                return BadRequest(new
+                {
+                    Message = $"Thao tác không hợp lệ. Số dư sau khi điều chỉnh không thể nhỏ hơn số tiền đang được khóa ({account.LockedBalance} {account.CurrencyCode}) trong mục tiêu tiết kiệm."
+                });
+            }
+
             var newAdjustBalance = new AdjustBalance
             {
                 AccountId = request.AccountId,
@@ -89,7 +99,7 @@ namespace SE114_MoneyApp_BE.Controllers
 
             _context.AdjustBalances.Add(newAdjustBalance);
 
-            account.Balance += request.Amount;
+            account.Balance = simulatedNewBalance;
 
             await _context.SaveChangesAsync();
 
@@ -98,7 +108,7 @@ namespace SE114_MoneyApp_BE.Controllers
                 Message = "Điều chỉnh số dư thành công.",
                 AdjustBalanceId = newAdjustBalance.Id,
                 NewBalance = account.Balance,
-                CurrencyCode = account.CurrencyCode // Tiện thể trả về luôn cho FE đỡ phải hỏi lại
+                CurrencyCode = account.CurrencyCode
             });
         }
     }

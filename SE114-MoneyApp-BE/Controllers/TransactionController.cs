@@ -168,6 +168,11 @@ namespace SE114_MoneyApp_BE.Controllers
             switch (category.CategoryGroup!.Type)
             {
                 case CategoryType.Expense:
+                    var availableBalance = account.Balance - account.LockedBalance;
+                    if (availableBalance < (decimal)calculatedAccountAmount)
+                    {
+                        return BadRequest("Số dư khả dụng trong tài khoản này không đủ để thực hiện giao dịch.");
+                    }
                     account.Balance -= (decimal)calculatedAccountAmount;
                     break;
                 case CategoryType.Income:
@@ -199,32 +204,13 @@ namespace SE114_MoneyApp_BE.Controllers
             if (transaction == null) return NotFound("Không tìm thấy giao dịch");
 
             var oldAccount = await _context.Accounts.FindAsync(transaction.AccountId);
-            var oldCategory = await _context.Categories
-                .Include(c => c.CategoryGroup)
-                .FirstOrDefaultAsync(c => c.Id == transaction.CategoryId);
-
-            // HOÀN TIỀN CŨ
-            if (oldAccount != null && oldCategory != null)
-            {
-                var oldAmount = transaction.AccountAmount;
-                switch (oldCategory.CategoryGroup!.Type)
-                {
-                    case CategoryType.Expense:
-                        oldAccount.Balance += oldAmount;
-                        break;
-                    case CategoryType.Income:
-                        oldAccount.Balance -= oldAmount;
-                        break;
-                }
-            }
+            var oldCategory = await _context.Categories.Include(c => c.CategoryGroup).FirstOrDefaultAsync(c => c.Id == transaction.CategoryId);
 
             var newAccount = await _context.Accounts.FirstOrDefaultAsync(a => a.Id == request.AccountId && a.UserId == userId);
-            if (newAccount == null) return BadRequest("Invalid account");
+            if (newAccount == null) return BadRequest("Tài khoản mới không hợp lệ");
 
-            var newCategory = await _context.Categories
-                .Include(c => c.CategoryGroup)
-                .FirstOrDefaultAsync(c => c.Id == request.CategoryId && c.UserId == userId);
-            if (newCategory == null) return BadRequest("Invalid category");
+            var newCategory = await _context.Categories.Include(c => c.CategoryGroup).FirstOrDefaultAsync(c => c.Id == request.CategoryId && c.UserId == userId);
+            if (newCategory == null) return BadRequest("Hạng mục mới không hợp lệ");
 
             var currentUser = await _context.Users.FindAsync(userId);
 
@@ -232,7 +218,6 @@ namespace SE114_MoneyApp_BE.Controllers
             double newAbsOriginalAmount = Math.Abs((double)request.OriginalAmount);
             string newTransactionCurrency = !string.IsNullOrEmpty(request.CurrencyCode) ? request.CurrencyCode.ToUpper() : newAccount.CurrencyCode.ToUpper();
             string newAccountCurrency = newAccount.CurrencyCode.ToUpper();
-
             string systemCurrency = !string.IsNullOrEmpty(currentUser?.DefaultCurrency) ? currentUser.DefaultCurrency.ToUpper() : "VND";
 
             _cache.TryGetValue("LatestExchangeRates", out Dictionary<string, double>? rates);
@@ -241,7 +226,57 @@ namespace SE114_MoneyApp_BE.Controllers
             double newCalculatedBaseAmount = ConvertCurrency(newAbsOriginalAmount, newTransactionCurrency, systemCurrency, rates);
             double newExchangeRate = newAbsOriginalAmount > 0 ? newCalculatedAccountAmount / newAbsOriginalAmount : 1.0;
 
-            // 2. CẬP NHẬT DỮ LIỆU
+            // 2. MÔ PHỎNG VÀ KIỂM TRA AN TOÀN SỐ DƯ
+            decimal tempOldAccountBalance = oldAccount!.Balance;
+            decimal tempNewAccountBalance = newAccount.Balance;
+            bool isSameAccount = oldAccount.Id == newAccount.Id;
+
+            // BƯỚC A: HOÀN TÁC GIAO DỊCH CŨ (Trong bộ nhớ tạm)
+            if (oldCategory!.CategoryGroup!.Type == CategoryType.Expense)
+            {
+                tempOldAccountBalance += transaction.AccountAmount;
+            }
+            else if (oldCategory.CategoryGroup.Type == CategoryType.Income)
+            {
+                tempOldAccountBalance -= transaction.AccountAmount;
+            }
+
+            // Đồng bộ biến tạm nếu không đổi tài khoản
+            if (isSameAccount) tempNewAccountBalance = tempOldAccountBalance;
+
+            // BƯỚC B: ÁP DỤNG GIAO DỊCH MỚI (Trong bộ nhớ tạm)
+            if (newCategory!.CategoryGroup!.Type == CategoryType.Expense)
+            {
+                tempNewAccountBalance -= (decimal)newCalculatedAccountAmount;
+            }
+            else if (newCategory.CategoryGroup.Type == CategoryType.Income)
+            {
+                tempNewAccountBalance += (decimal)newCalculatedAccountAmount;
+            }
+
+            // BƯỚC C: KIỂM TRA KHẢ DỤNG TỪNG TÀI KHOẢN VÀ CHỐT SỐ
+            if (isSameAccount)
+            {
+                if (tempNewAccountBalance - oldAccount.LockedBalance < 0)
+                    return BadRequest("Sau khi cập nhật, số dư khả dụng không đủ để thực hiện thao tác này.");
+
+                // An toàn -> Áp dụng số dư thực
+                oldAccount.Balance = tempNewAccountBalance;
+            }
+            else
+            {
+                if (tempOldAccountBalance - oldAccount.LockedBalance < 0)
+                    return BadRequest("Không thể hoàn tác giao dịch ở tài khoản CŨ vì số dư khả dụng sẽ bị âm.");
+
+                if (tempNewAccountBalance - newAccount.LockedBalance < 0)
+                    return BadRequest("Số dư khả dụng của tài khoản MỚI không đủ để chứa giao dịch này.");
+
+                // An toàn -> Áp dụng số dư thực
+                oldAccount.Balance = tempOldAccountBalance;
+                newAccount.Balance = tempNewAccountBalance;
+            }
+
+            // 3. CẬP NHẬT DỮ LIỆU ENTITY GIAO DỊCH (Chỉ viết 1 lần duy nhất)
             transaction.AccountId = request.AccountId;
             transaction.CategoryId = request.CategoryId;
             transaction.TransactionDate = DateTime.SpecifyKind(request.Date.Date, DateTimeKind.Utc);
@@ -256,17 +291,6 @@ namespace SE114_MoneyApp_BE.Controllers
             transaction.AccountAmount = (decimal)newCalculatedAccountAmount;
             transaction.BaseAmount = (decimal)newCalculatedBaseAmount;
             transaction.ExchangeRate = newExchangeRate;
-
-            // 3. TRỪ/CỘNG TIỀN MỚI
-            switch (newCategory.CategoryGroup!.Type)
-            {
-                case CategoryType.Expense:
-                    newAccount.Balance -= (decimal)newCalculatedAccountAmount;
-                    break;
-                case CategoryType.Income:
-                    newAccount.Balance += (decimal)newCalculatedAccountAmount;
-                    break;
-            }
 
             await _context.SaveChangesAsync();
 
@@ -294,6 +318,11 @@ namespace SE114_MoneyApp_BE.Controllers
                     transaction.Account!.Balance += transaction.AccountAmount;
                     break;
                 case CategoryType.Income:
+                    var availableBalance = transaction.Account!.Balance - transaction.Account!.LockedBalance;
+                    if (availableBalance < transaction.AccountAmount)
+                    {
+                        return BadRequest("Không thể xóa giao dịch thu nhập này vì số dư khả dụng hiện tại sẽ bị âm.");
+                    }
                     transaction.Account!.Balance -= transaction.AccountAmount;
                     break;
             }

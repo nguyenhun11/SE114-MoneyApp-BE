@@ -128,6 +128,12 @@ namespace SE114_MoneyApp_BE.Controllers
             string destCurrency = destinationAccount.CurrencyCode.ToUpper();
             string systemCurrency = !string.IsNullOrEmpty(currentUser?.DefaultCurrency) ? currentUser.DefaultCurrency.ToUpper() : "VND";
 
+            var availableSource = sourceAccount.Balance - sourceAccount.LockedBalance;
+            if (availableSource < (decimal)absSourceAmount)
+            {
+                return BadRequest(new { Message = "Số dư khả dụng của tài khoản nguồn không đủ để thực hiện chuyển khoản." });
+            }
+
             _cache.TryGetValue("LatestExchangeRates", out Dictionary<string, double>? rates);
 
             // 2. BACKEND TỰ TÍNH TOÁN
@@ -185,13 +191,9 @@ namespace SE114_MoneyApp_BE.Controllers
             if (newSourceAccount.Id == newDestinationAccount.Id)
                 return BadRequest(new { Message = "Tài khoản không được trùng nhau" });
 
-            // 1. HOÀN TIỀN LẠI CHO VÍ CŨ (Dùng số tiền lưu lúc trước)
-            transfer.Source!.Balance += transfer.SourceAmount;
-            transfer.Destination!.Balance -= transfer.DestinationAmount;
-
             var currentUser = await _context.Users.FindAsync(userId);
 
-            // 2. TÍNH TOÁN LẠI TỪ ĐẦU DỰA TRÊN REQUEST MỚI
+            // 1. TÍNH TOÁN CÁC CON SỐ MỚI
             double newAbsSourceAmount = Math.Abs((double)request.SourceAmount);
             string newSourceCurrency = newSourceAccount.CurrencyCode.ToUpper();
             string newDestCurrency = newDestinationAccount.CurrencyCode.ToUpper();
@@ -203,26 +205,51 @@ namespace SE114_MoneyApp_BE.Controllers
             double newCalculatedBaseAmount = ConvertCurrency(newAbsSourceAmount, newSourceCurrency, systemCurrency, rates);
             double newDestExchangeRate = newAbsSourceAmount > 0 ? newCalculatedDestAmount / newAbsSourceAmount : 1.0;
 
-            // 3. CẬP NHẬT DỮ LIỆU CHUYỂN KHOẢN
+            // 2. MÔ PHỎNG SỐ DƯ (TRÁNH LỖI ĐẢO CHIỀU HOẶC TRÙNG TÀI KHOẢN)
+            var accountsMap = new Dictionary<Guid, Account>
+            {
+                { transfer.SourceAccountId, transfer.Source! },
+                { transfer.DestinationAccountId, transfer.Destination! },
+                { newSourceAccount.Id, newSourceAccount },
+                { newDestinationAccount.Id, newDestinationAccount }
+            };
+
+            var simulatedBalances = accountsMap.ToDictionary(k => k.Key, v => v.Value.Balance);
+
+            simulatedBalances[transfer.SourceAccountId] += transfer.SourceAmount;
+            simulatedBalances[transfer.DestinationAccountId] -= transfer.DestinationAmount;
+
+            simulatedBalances[newSourceAccount.Id] -= (decimal)newAbsSourceAmount;
+            simulatedBalances[newDestinationAccount.Id] += (decimal)newCalculatedDestAmount;
+
+            foreach (var accId in simulatedBalances.Keys)
+            {
+                var acc = accountsMap[accId];
+                if (simulatedBalances[accId] - acc.LockedBalance < 0)
+                {
+                    return BadRequest(new { Message = $"Thao tác này làm tài khoản '{acc.AccountName}' bị âm số dư khả dụng." });
+                }
+            }
+
+            // 3. AN TOÀN -> CHỐT DỮ LIỆU THỰC TẾ
+            foreach (var accId in simulatedBalances.Keys)
+            {
+                accountsMap[accId].Balance = simulatedBalances[accId];
+            }
+
             transfer.SourceAccountId = request.SourceAccountId;
             transfer.DestinationAccountId = request.DestinationAccountId;
-
             transfer.SourceAmount = (decimal)newAbsSourceAmount;
             transfer.DestinationAmount = (decimal)newCalculatedDestAmount;
             transfer.BaseAmount = (decimal)newCalculatedBaseAmount;
             transfer.SourceExchangeRate = 1.0;
             transfer.DestinationExchangeRate = newDestExchangeRate;
-
             transfer.TransferDate = request.TransferDate.Date.ToUniversalTime();
             transfer.Description = request.Description;
             transfer.LastUpdatedAt = DateTime.UtcNow;
 
-            // 4. ÁP DỤNG TRỪ/CỘNG CHO VÍ MỚI BẰNG CON SỐ VỪA TÍNH
-            newSourceAccount.Balance -= (decimal)newAbsSourceAmount;
-            newDestinationAccount.Balance += (decimal)newCalculatedDestAmount;
-
             await _context.SaveChangesAsync();
-            return Ok(new { Message = "Cập nhật thành công" });
+            return Ok(new { Message = "Cập nhật chuyển khoản thành công" });
         }
 
         [HttpDelete("{id:guid}")]
@@ -239,9 +266,14 @@ namespace SE114_MoneyApp_BE.Controllers
             if (transfer == null) return NotFound(new { Message = "Không tìm thấy chuyển khoản" });
             if (transfer.Source!.UserId != userId) return BadRequest(new { Message = "Không có quyền xóa." });
 
-            // Hoàn tác chuyển khoản bằng đúng hệ tiền của từng ví đã lưu, không cần tính lại
+            var availableDest = transfer.Destination!.Balance - transfer.Destination.LockedBalance;
+            if (availableDest < transfer.DestinationAmount)
+            {
+                return BadRequest(new { Message = "Không thể hoàn tác vì tài khoản nhận không còn đủ số dư khả dụng để thu hồi." });
+            }
+
             transfer.Source.Balance += transfer.SourceAmount;
-            transfer.Destination!.Balance -= transfer.DestinationAmount;
+            transfer.Destination.Balance -= transfer.DestinationAmount;
 
             _context.Transfers.Remove(transfer);
             await _context.SaveChangesAsync();

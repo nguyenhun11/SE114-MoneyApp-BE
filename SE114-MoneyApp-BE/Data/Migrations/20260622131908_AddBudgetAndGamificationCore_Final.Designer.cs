@@ -35,7 +35,7 @@ namespace SE114_MoneyApp_BE.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<decimal>("Balance")
+                    b.Property<decimal>("TotalBalance")
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<int>("ColorId")

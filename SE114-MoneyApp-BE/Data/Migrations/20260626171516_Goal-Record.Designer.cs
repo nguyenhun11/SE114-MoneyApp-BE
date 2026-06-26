@@ -12,8 +12,8 @@ using SE114_MoneyApp_BE.Data;
 namespace SE114_MoneyApp_BE.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260621032409_AddGoalsTable")]
-    partial class AddGoalsTable
+    [Migration("20260626171516_Goal-Record")]
+    partial class GoalRecord
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -43,6 +43,10 @@ namespace SE114_MoneyApp_BE.Migrations
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
+
+                    b.Property<string>("CurrencyCode")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Description")
                         .IsRequired()
@@ -82,7 +86,7 @@ namespace SE114_MoneyApp_BE.Migrations
                     b.Property<Guid>("AccountId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<decimal>("BaseAmount")
+                    b.Property<decimal>("Amount")
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<DateTime>("CreatedAt")
@@ -93,6 +97,112 @@ namespace SE114_MoneyApp_BE.Migrations
                     b.HasIndex("AccountId");
 
                     b.ToTable("AdjustBalances");
+                });
+
+            modelBuilder.Entity("SE114_MoneyApp_BE.Models.Badge", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("ConditionType")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("ConditionValue")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("IconKey")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Badges");
+                });
+
+            modelBuilder.Entity("SE114_MoneyApp_BE.Models.Budget", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid?>("CategoryGroupId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("CategoryId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("Period")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("StartDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CategoryGroupId");
+
+                    b.HasIndex("CategoryId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Budgets");
+                });
+
+            modelBuilder.Entity("SE114_MoneyApp_BE.Models.Building", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("BuildingType")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("CityStateId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Level")
+                        .HasColumnType("int");
+
+                    b.Property<int>("PositionX")
+                        .HasColumnType("int");
+
+                    b.Property<int>("PositionY")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("PurchasedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CityStateId");
+
+                    b.ToTable("Buildings");
                 });
 
             modelBuilder.Entity("SE114_MoneyApp_BE.Models.Category", b =>
@@ -176,6 +286,42 @@ namespace SE114_MoneyApp_BE.Migrations
                     b.ToTable("CategoryGroups");
                 });
 
+            modelBuilder.Entity("SE114_MoneyApp_BE.Models.CityState", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("CurrentStreak")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("LastCheckIn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Level")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ProsperityPoints")
+                        .HasColumnType("int");
+
+                    b.Property<int>("StabilityPoints")
+                        .HasColumnType("int");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("CityStates");
+                });
+
             modelBuilder.Entity("SE114_MoneyApp_BE.Models.Goal", b =>
                 {
                     b.Property<int>("Id")
@@ -219,6 +365,65 @@ namespace SE114_MoneyApp_BE.Migrations
                     b.ToTable("Goals");
                 });
 
+            modelBuilder.Entity("SE114_MoneyApp_BE.Models.GoalRecord", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("GoalId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GoalId");
+
+                    b.ToTable("GoalRecords");
+                });
+
+            modelBuilder.Entity("SE114_MoneyApp_BE.Models.Quest", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("ActionType")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("RewardPoints")
+                        .HasColumnType("int");
+
+                    b.Property<int>("RewardType")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Target")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Quests");
+                });
+
             modelBuilder.Entity("SE114_MoneyApp_BE.Models.RefreshToken", b =>
                 {
                     b.Property<int>("Id")
@@ -250,6 +455,9 @@ namespace SE114_MoneyApp_BE.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<decimal>("AccountAmount")
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<Guid>("AccountId")
                         .HasColumnType("uniqueidentifier");
 
@@ -262,6 +470,13 @@ namespace SE114_MoneyApp_BE.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("CurrencyCode")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<double>("ExchangeRate")
+                        .HasColumnType("float");
+
                     b.Property<string>("ImageUrls")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -269,9 +484,15 @@ namespace SE114_MoneyApp_BE.Migrations
                     b.Property<DateTime>("LastUpdatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<int>("MoodId")
+                        .HasColumnType("int");
+
                     b.Property<string>("Note")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("OriginalAmount")
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<DateTime>("TransactionDate")
                         .HasColumnType("datetime2");
@@ -304,11 +525,23 @@ namespace SE114_MoneyApp_BE.Migrations
                     b.Property<Guid>("DestinationAccountId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<decimal>("DestinationAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<double>("DestinationExchangeRate")
+                        .HasColumnType("float");
+
                     b.Property<DateTime>("LastUpdatedAt")
                         .HasColumnType("datetime2");
 
                     b.Property<Guid>("SourceAccountId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("SourceAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<double>("SourceExchangeRate")
+                        .HasColumnType("float");
 
                     b.Property<DateTime>("TransferDate")
                         .HasColumnType("datetime2");
@@ -335,6 +568,10 @@ namespace SE114_MoneyApp_BE.Migrations
 
                     b.Property<int>("DailyStreak")
                         .HasColumnType("int");
+
+                    b.Property<string>("DefaultCurrency")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Email")
                         .IsRequired()
@@ -384,6 +621,69 @@ namespace SE114_MoneyApp_BE.Migrations
                     b.ToTable("Users");
                 });
 
+            modelBuilder.Entity("SE114_MoneyApp_BE.Models.UserBadge", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("BadgeId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime>("UnlockedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BadgeId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("UserBadges");
+                });
+
+            modelBuilder.Entity("SE114_MoneyApp_BE.Models.UserQuest", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("CurrentProgress")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsClaimed")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsCompleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("QuestId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("QuestId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("UserQuests");
+                });
+
             modelBuilder.Entity("SE114_MoneyApp_BE.Models.Account", b =>
                 {
                     b.HasOne("SE114_MoneyApp_BE.Models.User", "User")
@@ -404,6 +704,40 @@ namespace SE114_MoneyApp_BE.Migrations
                         .IsRequired();
 
                     b.Navigation("Account");
+                });
+
+            modelBuilder.Entity("SE114_MoneyApp_BE.Models.Budget", b =>
+                {
+                    b.HasOne("SE114_MoneyApp_BE.Models.CategoryGroup", "CategoryGroup")
+                        .WithMany()
+                        .HasForeignKey("CategoryGroupId");
+
+                    b.HasOne("SE114_MoneyApp_BE.Models.Category", "Category")
+                        .WithMany()
+                        .HasForeignKey("CategoryId");
+
+                    b.HasOne("SE114_MoneyApp_BE.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Category");
+
+                    b.Navigation("CategoryGroup");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("SE114_MoneyApp_BE.Models.Building", b =>
+                {
+                    b.HasOne("SE114_MoneyApp_BE.Models.CityState", "CityState")
+                        .WithMany("Buildings")
+                        .HasForeignKey("CityStateId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CityState");
                 });
 
             modelBuilder.Entity("SE114_MoneyApp_BE.Models.Category", b =>
@@ -436,6 +770,17 @@ namespace SE114_MoneyApp_BE.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("SE114_MoneyApp_BE.Models.CityState", b =>
+                {
+                    b.HasOne("SE114_MoneyApp_BE.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("SE114_MoneyApp_BE.Models.Goal", b =>
                 {
                     b.HasOne("SE114_MoneyApp_BE.Models.User", "User")
@@ -445,6 +790,17 @@ namespace SE114_MoneyApp_BE.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("SE114_MoneyApp_BE.Models.GoalRecord", b =>
+                {
+                    b.HasOne("SE114_MoneyApp_BE.Models.Goal", "Goal")
+                        .WithMany()
+                        .HasForeignKey("GoalId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Goal");
                 });
 
             modelBuilder.Entity("SE114_MoneyApp_BE.Models.RefreshToken", b =>
@@ -496,9 +852,52 @@ namespace SE114_MoneyApp_BE.Migrations
                     b.Navigation("Source");
                 });
 
+            modelBuilder.Entity("SE114_MoneyApp_BE.Models.UserBadge", b =>
+                {
+                    b.HasOne("SE114_MoneyApp_BE.Models.Badge", "Badge")
+                        .WithMany()
+                        .HasForeignKey("BadgeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SE114_MoneyApp_BE.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Badge");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("SE114_MoneyApp_BE.Models.UserQuest", b =>
+                {
+                    b.HasOne("SE114_MoneyApp_BE.Models.Quest", "Quest")
+                        .WithMany()
+                        .HasForeignKey("QuestId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SE114_MoneyApp_BE.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Quest");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("SE114_MoneyApp_BE.Models.CategoryGroup", b =>
                 {
                     b.Navigation("Categories");
+                });
+
+            modelBuilder.Entity("SE114_MoneyApp_BE.Models.CityState", b =>
+                {
+                    b.Navigation("Buildings");
                 });
 #pragma warning restore 612, 618
         }

@@ -11,9 +11,8 @@ namespace SE114_MoneyApp_BE.Models
         public string AccountName { get; set; } = string.Empty;
         public int ColorId { get; set; }
         public int IconId { get; set; }
-
-        [Column(TypeName = "decimal(18,2)")]
-        public decimal Balance { get; set; }
+        [Column(TypeName = "decimal(18,2)")] public decimal Balance { get; set; }
+        [Column(TypeName = "decimal(18,2)")] public decimal LockedBalance { get; set; } = 0;
         public string CurrencyCode { get; set; } = "VND";
         public string Description { get; set; } = string.Empty;
         public bool IncludeInTotalBalance { get; set; } = true;

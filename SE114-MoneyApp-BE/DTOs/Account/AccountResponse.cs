@@ -9,8 +9,9 @@ namespace SE114_MoneyApp_BE.DTOs.Account
         public int ColorId { get; set; }
         public int IconId { get; set; }
 
-        [Column(TypeName = "decimal(18,2)")]
-        public decimal Balance { get; set; }
+        public decimal TotalBalance { get; set; }
+        public decimal LockedBalance { get; set; }
+        public decimal AvailableBalance { get; set; }
         public string CurrencyCode { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
         public bool IncludeInTotalBalance { get; set; } = true;

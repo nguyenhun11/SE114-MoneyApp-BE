@@ -32,7 +32,7 @@ namespace SE114_MoneyApp_BE.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<decimal>("Balance")
+                    b.Property<decimal>("TotalBalance")
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<int>("ColorId")
@@ -360,6 +360,34 @@ namespace SE114_MoneyApp_BE.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("Goals");
+                });
+
+            modelBuilder.Entity("SE114_MoneyApp_BE.Models.GoalRecord", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("GoalId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GoalId");
+
+                    b.ToTable("GoalRecords");
                 });
 
             modelBuilder.Entity("SE114_MoneyApp_BE.Models.Quest", b =>
@@ -759,6 +787,17 @@ namespace SE114_MoneyApp_BE.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("SE114_MoneyApp_BE.Models.GoalRecord", b =>
+                {
+                    b.HasOne("SE114_MoneyApp_BE.Models.Goal", "Goal")
+                        .WithMany()
+                        .HasForeignKey("GoalId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Goal");
                 });
 
             modelBuilder.Entity("SE114_MoneyApp_BE.Models.RefreshToken", b =>
