@@ -212,6 +212,11 @@ namespace SE114_MoneyApp_BE.Controllers
             });
         }
 
+        /// <summary>
+        /// Lấy các lịch sử của một mục tiêu
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
         [HttpGet("{id}/records")]
         public async Task<ActionResult<IEnumerable<GoalRecordResponse>>> GetGoalRecords(int id)
         {
@@ -241,6 +246,11 @@ namespace SE114_MoneyApp_BE.Controllers
             return Ok(records);
         }
 
+        /// <summary>
+        /// Lấy một chi tiết lịch sử
+        /// </summary>
+        /// <param name="recordId"></param>
+        /// <returns></returns>
         [HttpGet("records/{recordId}")]
         public async Task<ActionResult<GoalRecordResponse>> GetGoalRecordById(int recordId)
         {
@@ -270,6 +280,46 @@ namespace SE114_MoneyApp_BE.Controllers
             };
 
             return Ok(response);
+        }
+
+        /// <summary>
+        /// Lấy các lịch sử theo thời gian
+        /// </summary>
+        [HttpGet("records/all")]
+        public async Task<ActionResult<IEnumerable<GoalRecordResponse>>> GetAllGoalRecords(
+            [FromQuery] DateTime? startDate,
+            [FromQuery] DateTime? endDate,
+            [FromQuery] Guid? accountId) // ĐÃ THÊM THAM SỐ NÀY
+        {
+            var (userId, success, message) = GetCurrentUserId();
+            if (!success) return Unauthorized(new { Message = message });
+
+            var query = _context.GoalRecords
+                .Include(r => r.Account)
+                .Include(r => r.Goal)
+                .Where(r => r.Goal != null && r.Goal.UserId == userId);
+
+            if (startDate.HasValue) query = query.Where(r => r.CreatedAt >= startDate.Value.ToUniversalTime());
+            if (endDate.HasValue) query = query.Where(r => r.CreatedAt <= endDate.Value.ToUniversalTime());
+
+            if (accountId.HasValue) query = query.Where(r => r.AccountId == accountId.Value);
+
+            var records = await query
+                .OrderByDescending(r => r.CreatedAt)
+                .Select(r => new GoalRecordResponse
+                {
+                    Id = r.Id,
+                    GoalId = r.GoalId,
+                    GoalName = r.Goal != null ? r.Goal.Name : string.Empty,
+                    AccountId = r.AccountId,
+                    AccountName = r.Account != null ? r.Account.AccountName : string.Empty,
+                    Amount = r.Amount,
+                    Type = r.Type,
+                    CreatedAt = DateTime.SpecifyKind(r.CreatedAt, DateTimeKind.Utc)
+                })
+                .ToListAsync();
+
+            return Ok(records);
         }
 
         [HttpDelete("records/{recordId}")]
