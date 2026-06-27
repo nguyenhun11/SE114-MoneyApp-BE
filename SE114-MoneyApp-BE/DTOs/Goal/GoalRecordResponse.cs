@@ -4,6 +4,7 @@
     {
         public int Id { get; set; }
         public int GoalId { get; set; }
+        public string GoalName { get; set; } = string.Empty;
         public Guid AccountId { get; set; }
         public string AccountName { get; set; } = string.Empty; // Để FE hiển thị ví dụ: "Nạp từ Ví Techcombank"
         public decimal Amount { get; set; }

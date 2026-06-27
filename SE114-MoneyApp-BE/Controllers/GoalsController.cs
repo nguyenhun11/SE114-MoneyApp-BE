@@ -229,6 +229,7 @@ namespace SE114_MoneyApp_BE.Controllers
                 {
                     Id = r.Id,
                     GoalId = r.GoalId,
+                    GoalName = r.Goal != null ? r.Goal.Name : string.Empty,
                     AccountId = r.AccountId,
                     AccountName = r.Account != null ? r.Account.AccountName : string.Empty,
                     Amount = r.Amount,
@@ -260,6 +261,7 @@ namespace SE114_MoneyApp_BE.Controllers
             {
                 Id = record.Id,
                 GoalId = record.GoalId,
+                GoalName = record.Goal != null ? record.Goal.Name : string.Empty,
                 AccountId = record.AccountId,
                 AccountName = record.Account != null ? record.Account.AccountName : string.Empty,
                 Amount = record.Amount,
