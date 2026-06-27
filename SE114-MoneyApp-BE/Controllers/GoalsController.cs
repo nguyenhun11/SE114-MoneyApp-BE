@@ -33,7 +33,7 @@ namespace SE114_MoneyApp_BE.Controllers
                     Name = g.Name,
                     TargetAmount = g.TargetAmount,
                     CurrentAmount = g.CurrentAmount,
-                    Deadline = DateTime.SpecifyKind(g.Deadline, DateTimeKind.Utc), // Ép kiểu UTC khi trả về
+                    Deadline = DateTime.SpecifyKind(g.Deadline, DateTimeKind.Utc),
                     IconId = g.IconId,
                     ColorId = g.ColorId,
                     IsActive = g.IsActive
@@ -86,11 +86,7 @@ namespace SE114_MoneyApp_BE.Controllers
             if (!success) return Unauthorized(new { Message = message });
 
             var goal = await _context.Goals.FirstOrDefaultAsync(g => g.Id == id && g.UserId == userId);
-
-            if (goal == null)
-            {
-                return NotFound(new { Message = "Không tìm thấy mục tiêu hoặc bạn không có quyền chỉnh sửa" });
-            }
+            if (goal == null) return NotFound(new { Message = "Không tìm thấy mục tiêu hoặc bạn không có quyền chỉnh sửa" });
 
             goal.Name = request.Name;
             goal.TargetAmount = request.TargetAmount;
@@ -99,9 +95,9 @@ namespace SE114_MoneyApp_BE.Controllers
             goal.ColorId = request.ColorId;
 
             await _context.SaveChangesAsync();
-
             return Ok(new { Message = "Cập nhật mục tiêu thành công" });
         }
+
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteGoal(int id)
         {
@@ -109,10 +105,8 @@ namespace SE114_MoneyApp_BE.Controllers
             if (!success) return Unauthorized(new { Message = message });
 
             var goal = await _context.Goals.FirstOrDefaultAsync(g => g.Id == id && g.UserId == userId);
-            if (goal == null)
-            {
-                return NotFound(new { Message = "Không tìm thấy mục tiêu hoặc bạn không có quyền xóa" });
-            }
+            if (goal == null) return NotFound(new { Message = "Không tìm thấy mục tiêu hoặc bạn không có quyền xóa" });
+
             if (goal.CurrentAmount > 0)
             {
                 return BadRequest(new { Message = "Vui lòng rút hết tiền trước khi xóa mục tiêu." });
@@ -120,22 +114,17 @@ namespace SE114_MoneyApp_BE.Controllers
 
             goal.IsActive = false;
             await _context.SaveChangesAsync();
-
             return Ok(new { Message = "Xóa mục tiêu thành công" });
         }
 
         [HttpPost("{id}/deposit")]
-        public async Task<IActionResult> DepositToGoal(int id, [FromBody] DepositRequest request)
+        public async Task<ActionResult<GoalTransactionResponse>> DepositToGoal(int id, [FromBody] DepositRequest request)
         {
             var (userId, success, message) = GetCurrentUserId();
             if (!success) return Unauthorized(new { Message = message });
 
             var goal = await _context.Goals.FirstOrDefaultAsync(g => g.Id == id && g.UserId == userId && g.IsActive);
-
-            if (goal == null)
-            {
-                return NotFound(new { Message = "Không tìm thấy mục tiêu hoặc mục tiêu đã bị đóng" });
-            }
+            if (goal == null) return NotFound(new { Message = "Không tìm thấy mục tiêu hoặc mục tiêu đã bị đóng" });
 
             var account = await _context.Accounts.FirstOrDefaultAsync(a => a.Id == request.AccountId && a.UserId == userId && a.IsActive);
             if (account == null) return NotFound(new { Message = "Không tìm thấy tài khoản nguồn" });
@@ -167,25 +156,24 @@ namespace SE114_MoneyApp_BE.Controllers
                 await _gamificationService.OnGoalCompleted(userId);
             }
 
-            return Ok(new
+            return Ok(new GoalTransactionResponse
             {
                 Message = "Nạp tiền vào mục tiêu thành công",
                 CurrentAmount = goal.CurrentAmount,
-                Progress = goal.TargetAmount > 0 ? (goal.CurrentAmount / goal.TargetAmount) * 100 : 0
+                Progress = goal.TargetAmount > 0 ? (goal.CurrentAmount / goal.TargetAmount) * 100 : 0,
+                AccountAvailableBalance = account.Balance - account.LockedBalance
             });
         }
 
         [HttpPost("{id}/withdraw")]
-        public async Task<IActionResult> WithdrawFromGoal(int id, [FromBody] WithdrawRequest request)
+        public async Task<ActionResult<GoalTransactionResponse>> WithdrawFromGoal(int id, [FromBody] WithdrawRequest request)
         {
             var (userId, success, message) = GetCurrentUserId();
             if (!success) return Unauthorized(new { Message = message });
 
             var goal = await _context.Goals.FirstOrDefaultAsync(g => g.Id == id && g.UserId == userId && g.IsActive);
-            if (goal == null)
-            {
-                return NotFound(new { Message = "Không tìm thấy mục tiêu hoặc mục tiêu đã bị đóng" });
-            }
+            if (goal == null) return NotFound(new { Message = "Không tìm thấy mục tiêu hoặc mục tiêu đã bị đóng" });
+
             if (goal.CurrentAmount < request.Amount)
             {
                 return BadRequest(new { Message = "Số dư của mục tiêu không đủ để rút." });
@@ -193,6 +181,7 @@ namespace SE114_MoneyApp_BE.Controllers
 
             var account = await _context.Accounts.FirstOrDefaultAsync(a => a.Id == request.AccountId && a.UserId == userId && a.IsActive);
             if (account == null) return NotFound(new { Message = "Không tìm thấy tài khoản nguồn" });
+
             if (account.LockedBalance < request.Amount)
             {
                 return BadRequest(new { Message = "Tài khoản được chọn không có đủ số dư đang khóa để thực hiện rút." });
@@ -200,6 +189,7 @@ namespace SE114_MoneyApp_BE.Controllers
 
             goal.CurrentAmount -= request.Amount;
             account.LockedBalance -= request.Amount;
+            account.LastUpdatedAt = DateTime.UtcNow;
 
             var record = new GoalRecord
             {
@@ -213,32 +203,36 @@ namespace SE114_MoneyApp_BE.Controllers
 
             await _context.SaveChangesAsync();
 
-            return Ok(new
+            return Ok(new GoalTransactionResponse
             {
                 Message = "Rút tiền từ mục tiêu thành công",
                 CurrentAmount = goal.CurrentAmount,
-                Progress = goal.TargetAmount > 0 ? (goal.CurrentAmount / goal.TargetAmount) * 100 : 0
+                Progress = goal.TargetAmount > 0 ? (goal.CurrentAmount / goal.TargetAmount) * 100 : 0,
+                AccountAvailableBalance = account.Balance - account.LockedBalance
             });
         }
 
         [HttpGet("{id}/records")]
-        public async Task<IActionResult> GetGoalRecords(int id)
+        public async Task<ActionResult<IEnumerable<GoalRecordResponse>>> GetGoalRecords(int id)
         {
             var (userId, success, message) = GetCurrentUserId();
             if (!success) return Unauthorized(new { Message = message });
 
-            // Kiểm tra quyền sở hữu mục tiêu trước khi cho xem lịch sử
             var isOwner = await _context.Goals.AnyAsync(g => g.Id == id && g.UserId == userId);
             if (!isOwner) return Forbid();
 
             var records = await _context.GoalRecords
+                .Include(r => r.Account)
                 .Where(r => r.GoalId == id)
-                .OrderByDescending(r => r.CreatedAt) // Sắp xếp mới nhất lên đầu
-                .Select(r => new
+                .OrderByDescending(r => r.CreatedAt)
+                .Select(r => new GoalRecordResponse
                 {
-                    r.Id,
-                    r.Amount,
-                    r.Type, // "Deposit" hoặc "Withdraw"
+                    Id = r.Id,
+                    GoalId = r.GoalId,
+                    AccountId = r.AccountId,
+                    AccountName = r.Account != null ? r.Account.AccountName : string.Empty,
+                    Amount = r.Amount,
+                    Type = r.Type,
                     CreatedAt = DateTime.SpecifyKind(r.CreatedAt, DateTimeKind.Utc)
                 })
                 .ToListAsync();
@@ -246,45 +240,85 @@ namespace SE114_MoneyApp_BE.Controllers
             return Ok(records);
         }
 
-        // ĐÃ THÊM: Xóa một lịch sử nạp/rút cụ thể
-        [HttpDelete("records/{recordId}")]
-        public async Task<IActionResult> DeleteGoalRecord(int recordId)
+        [HttpGet("records/{recordId}")]
+        public async Task<ActionResult<GoalRecordResponse>> GetGoalRecordById(int recordId)
         {
             var (userId, success, message) = GetCurrentUserId();
             if (!success) return Unauthorized(new { Message = message });
 
-            // 1. Tìm record, bao gồm cả thông tin Goal chứa nó
+            var record = await _context.GoalRecords
+                .Include(r => r.Goal)
+                .Include(r => r.Account)
+                .FirstOrDefaultAsync(r => r.Id == recordId);
+
+            if (record == null || record.Goal == null || record.Goal.UserId != userId)
+            {
+                return NotFound(new { Message = "Không tìm thấy lịch sử giao dịch hoặc bạn không có quyền truy cập" });
+            }
+
+            var response = new GoalRecordResponse
+            {
+                Id = record.Id,
+                GoalId = record.GoalId,
+                AccountId = record.AccountId,
+                AccountName = record.Account != null ? record.Account.AccountName : string.Empty,
+                Amount = record.Amount,
+                Type = record.Type,
+                CreatedAt = DateTime.SpecifyKind(record.CreatedAt, DateTimeKind.Utc)
+            };
+
+            return Ok(response);
+        }
+
+        [HttpDelete("records/{recordId}")]
+        public async Task<ActionResult<GoalRecordDeleteResponse>> DeleteGoalRecord(int recordId)
+        {
+            var (userId, success, message) = GetCurrentUserId();
+            if (!success) return Unauthorized(new { Message = message });
+
             var record = await _context.GoalRecords
                 .Include(r => r.Goal)
                 .FirstOrDefaultAsync(r => r.Id == recordId);
 
-            // Kiểm tra xem record có tồn tại và thuộc về user đang đăng nhập không
             if (record == null || record.Goal == null || record.Goal.UserId != userId)
             {
                 return NotFound(new { Message = "Không tìm thấy lịch sử hoặc bạn không có quyền xóa" });
             }
 
-            // 2. HOÀN TÁC SỐ DƯ (Rollback TotalBalance)
+            var account = await _context.Accounts.FirstOrDefaultAsync(a => a.Id == record.AccountId);
+            if (account == null) return NotFound(new { Message = "Không tìm thấy tài khoản liên quan" });
+
             if (record.Type == "Deposit")
             {
-                // Nếu xóa lịch sử Nạp -> Trừ tiền khỏi mục tiêu
-                // Phải kiểm tra xem nếu trừ thì có bị âm tiền không
                 if (record.Goal.CurrentAmount < record.Amount)
                 {
                     return BadRequest(new { Message = "Không thể xóa lịch sử nạp này vì số dư mục tiêu sẽ bị âm." });
                 }
+                if (account.LockedBalance < record.Amount)
+                {
+                    return BadRequest(new { Message = "Không thể xóa lịch sử nạp vì số dư khóa của tài khoản không khớp." });
+                }
+
                 record.Goal.CurrentAmount -= record.Amount;
+                account.LockedBalance -= record.Amount; // Hoàn tác trả lại tiền khả dụng cho ví
             }
             else if (record.Type == "Withdraw")
             {
-                // Nếu xóa lịch sử Rút -> Cộng tiền trả lại mục tiêu
+                var availableBalance = account.Balance - account.LockedBalance;
+                if (availableBalance < record.Amount)
+                {
+                    return BadRequest(new { Message = "Tài khoản nguồn không đủ số dư khả dụng để khóa lại khoản tiền này." });
+                }
+
                 record.Goal.CurrentAmount += record.Amount;
+                account.LockedBalance += record.Amount; // Khóa tiền lại vào ví như cũ
             }
 
+            account.LastUpdatedAt = DateTime.UtcNow;
             _context.GoalRecords.Remove(record);
             await _context.SaveChangesAsync();
 
-            return Ok(new
+            return Ok(new GoalRecordDeleteResponse
             {
                 Message = "Xóa lịch sử thành công",
                 NewGoalAmount = record.Goal.CurrentAmount
