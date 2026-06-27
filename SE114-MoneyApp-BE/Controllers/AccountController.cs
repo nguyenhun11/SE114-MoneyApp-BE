@@ -93,7 +93,7 @@ namespace SE114_MoneyApp_BE.Controllers
         /// </summary>
         /// <returns></returns>
         [HttpGet("total-balance")]
-        public async Task<ActionResult<Dictionary<string, decimal>>> GetTotalBalance()
+        public async Task<ActionResult<Dictionary<string, TotalBalanceDto>>> GetTotalBalance()
         {
             var (userId, success, message) = GetCurrentUserId();
             if (!success) return Unauthorized(new { Message = message });
@@ -101,9 +101,18 @@ namespace SE114_MoneyApp_BE.Controllers
             var balances = await _context.Accounts
                 .Where(a => a.UserId == userId && a.IsActive && a.IncludeInTotalBalance)
                 .GroupBy(a => a.CurrencyCode)
-                .Select(g => new { Currency = g.Key, Total = g.Sum(a => a.Balance) })
-                .ToDictionaryAsync(k => k.Currency, v => v.Total);
-
+                .Select(g => new
+                {
+                    Currency = g.Key,
+                    Total = g.Sum(a => a.Balance),
+                    Locked = g.Sum(a => a.LockedBalance)
+                })
+                .ToDictionaryAsync(k => k.Currency, v => new TotalBalanceDto
+                {
+                    TotalBalance = v.Total,
+                    LockedBalance = v.Locked,
+                    AvailableBalance = v.Total - v.Locked
+                });
             return Ok(balances);
         }
 
