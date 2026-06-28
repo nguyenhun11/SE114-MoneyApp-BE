@@ -8,6 +8,7 @@ using SE114_MoneyApp_BE.Models;
 
 namespace SE114_MoneyApp_BE.Controllers
 {
+    [Route("api/[controller]")]
     public class DashboardController : AuthorizeControllerBase
     {
         public DashboardController(AppDbContext context, IMemoryCache cache) : base(context, cache)
@@ -42,6 +43,7 @@ namespace SE114_MoneyApp_BE.Controllers
                 response.UserSummary = new UserSummaryDto
                 {
                     Name = user.Name,
+                    ImageUrl = user.ImageUrl,
                     DailyStreak = displayStreak,
                     TodayCheckedIn = user.LastActiveDate.HasValue && user.LastActiveDate.Value.Date == today
                 };

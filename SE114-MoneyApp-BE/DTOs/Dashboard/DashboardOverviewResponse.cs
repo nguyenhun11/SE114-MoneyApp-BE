@@ -14,6 +14,7 @@
     public class UserSummaryDto
     {
         public string Name { get; set; } = string.Empty;
+        public string ImageUrl { get; set; } = string.Empty;
         public int DailyStreak { get; set; }
         public bool TodayCheckedIn { get; set; }
     }
