@@ -159,6 +159,7 @@ namespace SE114_MoneyApp_BE.Controllers
                 AccountAmount = (decimal)calculatedAccountAmount,
                 BaseAmount = (decimal)calculatedBaseAmount,
                 ExchangeRate = exchangeRate,
+                MoodId = request.MoodId,
 
                 CreatedAt = DateTime.UtcNow,
                 LastUpdatedAt = DateTime.UtcNow
@@ -298,6 +299,8 @@ namespace SE114_MoneyApp_BE.Controllers
             transaction.AccountAmount = (decimal)newCalculatedAccountAmount;
             transaction.BaseAmount = (decimal)newCalculatedBaseAmount;
             transaction.ExchangeRate = newExchangeRate;
+
+            transaction.MoodId = request.MoodId;
 
             await _context.SaveChangesAsync();
 
