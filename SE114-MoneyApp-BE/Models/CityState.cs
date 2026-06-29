@@ -16,6 +16,10 @@ namespace SE114_MoneyApp_BE.Models
 
         public int StabilityPoints { get; set; } = 0;
 
+        public int TotalProsperityPoints { get; set; } = 0;
+
+        public int TotalStabilityPoints { get; set; } = 0;
+
         public DateTime? LastCheckIn { get; set; }
 
         public int CurrentStreak { get; set; } = 0;

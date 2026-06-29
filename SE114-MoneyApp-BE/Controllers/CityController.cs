@@ -55,6 +55,42 @@ namespace SE114_MoneyApp_BE.Controllers
             });
         }
 
+        [HttpGet("ranking")]
+        public async Task<ActionResult<IEnumerable<RankingResponse>>> GetRanking([FromQuery] int type, [FromQuery] int limit = 50)
+        {
+            IQueryable<CityState> query = _context.CityStates.Include(c => c.User);
+
+            if (type == 1)
+            {
+                // Xếp hạng theo TỔNG điểm Prosperity tích lũy
+                query = query.OrderByDescending(c => c.TotalProsperityPoints);
+            }
+            else if (type == 2)
+            {
+                // Xếp hạng theo TỔNG điểm Stability tích lũy
+                query = query.OrderByDescending(c => c.TotalStabilityPoints);
+            }
+            else
+            {
+                return BadRequest(new { Message = "Invalid type. Use 1 for Prosperity or 2 for Stability." });
+            }
+
+            var rankings = await query.Take(limit).ToListAsync();
+
+            var response = rankings.Select((c, index) => new RankingResponse
+            {
+                Rank = index + 1,
+                UserId = c.UserId,
+                Name = c.User?.Name ?? "Unknown",
+                ImageUrl = c.User?.ImageUrl,
+                ProsperityPoints = type == 1 ? c.TotalProsperityPoints : c.ProsperityPoints,
+                StabilityPoints = type == 2 ? c.TotalStabilityPoints : c.StabilityPoints,
+                CityLevel = c.Level
+            }).ToList();
+
+            return Ok(response);
+        }
+
         [HttpPost("build")]
         public async Task<ActionResult> Build(BuildRequest request)
         {
@@ -78,8 +114,13 @@ namespace SE114_MoneyApp_BE.Controllers
                 case "park": cost = 50; useSP = true; break;
                 case "fountain": cost = 80; useSP = true; break;
                 case "statue": cost = 150; useSP = true; break;
+
+                case "house": cost = 100; useSP = false; break;
+                case "shop": cost = 300; useSP = false; break;
+                case "factory": cost = 600; useSP = false; break;
+
                 default:
-                    cost = 100; // Chi phí PP cho các công trình thông thường
+                    cost = 100; // Chi phí mặc định cho các công trình khác
                     useSP = false;
                     break;
             }
@@ -150,7 +191,7 @@ namespace SE114_MoneyApp_BE.Controllers
             int upgradeCost = 0;
 
             if (currentLevel == 1) upgradeCost = 200;
-            else if (currentLevel == 2) upgradeCost = 500;
+            else if (currentLevel == 2) upgradeCost = 400;
             else return BadRequest(new { Message = "Maximum level reached" });
 
             if (city.ProsperityPoints < upgradeCost)
