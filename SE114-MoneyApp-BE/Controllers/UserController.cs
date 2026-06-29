@@ -355,9 +355,17 @@ namespace SE114_MoneyApp_BE.Controllers
             await _context.SaveChangesAsync();
 
             // Cập nhật điểm cho MoneyCity khi điểm danh theo ngày của client
-            await _gamificationService.OnDailyCheckIn(userId, clientToday);
+            var (baseSP, bonusSP, totalSP) = await _gamificationService.OnDailyCheckIn(userId, clientToday);
 
-            return Ok(new { Message = responseMessage, CurrentStreak = user.DailyStreak, IsIncreased = isStreakIncreased });
+            return Ok(new
+            {
+                Message = responseMessage,
+                CurrentStreak = user.DailyStreak,
+                IsIncreased = isStreakIncreased,
+                baseSP = baseSP,
+                bonusSP = bonusSP,
+                totalSP = totalSP
+            });
         }
 
         // POST: api/user/restore-streak

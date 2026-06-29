@@ -13,10 +13,14 @@ namespace SE114_MoneyApp_BE.Services
             _context = context;
         }
 
-        public async Task OnDailyCheckIn(int userId, DateTime? clientDate = null)
+        public async Task<(int baseSP, int bonusSP, int totalSP)> OnDailyCheckIn(int userId, DateTime? clientDate = null)
         {
             var city = await GetOrCreateCityState(userId);
             var checkInDate = clientDate?.Date ?? DateTime.UtcNow.Date;
+
+            int baseSP = 10;
+            int bonusSP = 0;
+            int totalSPToAdd = baseSP;
 
             // Kiểm tra xem ngày yêu cầu đã check-in chưa
             if (city.LastCheckIn == null || city.LastCheckIn.Value.Date < checkInDate)
@@ -31,8 +35,12 @@ namespace SE114_MoneyApp_BE.Services
                     city.CurrentStreak = 1;
                 }
 
-                city.StabilityPoints += 10; // Cộng 10 điểm cho check-in hàng ngày
-                city.TotalStabilityPoints += 10; // Cộng vào tổng điểm tích lũy
+                // Tính toán bonus từ Nhà ở (House)
+                bonusSP = await GetBuildingBonus(userId, "house", 10);
+                totalSPToAdd = baseSP + bonusSP;
+
+                city.StabilityPoints += totalSPToAdd;
+                city.TotalStabilityPoints += totalSPToAdd;
                 city.LastCheckIn = checkInDate;
 
                 await UpdateQuestProgress(userId, "CheckIn");
@@ -40,9 +48,11 @@ namespace SE114_MoneyApp_BE.Services
                 await CheckBadges(userId); // Luôn kiểm tra badge khi có hoạt động
                 await _context.SaveChangesAsync();
             }
+
+            return (baseSP, bonusSP, totalSPToAdd);
         }
 
-        public async Task OnTransactionAdded(int userId, DateTime transactionDate)
+        public async Task<(int baseSP, int bonusPP, int totalPP)> OnTransactionAdded(int userId, DateTime transactionDate)
         {
             var city = await GetOrCreateCityState(userId);
             var txDate = transactionDate.Date;
@@ -61,23 +71,41 @@ namespace SE114_MoneyApp_BE.Services
                  // CheckBadges sẽ xử lý logic này bên trong
             }
 
+            // Tính toán bonus từ Nhà máy (Factory)
+            int bonusPP = await GetBuildingBonus(userId, "factory", 20);
+            int baseSP = 1;
+
             // Nếu giao dịch thuộc về một ngày chưa được check-in, thực hiện check-in cho ngày đó
             if (city.LastCheckIn == null || city.LastCheckIn.Value.Date < txDate)
             {
                 await OnDailyCheckIn(userId, txDate);
-                // Sau khi check-in cho ngày txDate, LastCheckIn của city sẽ là txDate
-                // Chúng ta không cộng thêm 1đ cho giao dịch đầu tiên của ngày mới này
-                return;
+                // Sau khi check-in, ta vẫn cộng thêm bonus PP từ Factory nếu có
+                if (bonusPP > 0)
+                {
+                    city.ProsperityPoints += bonusPP;
+                    city.TotalProsperityPoints += bonusPP;
+                }
+                // Trong trường hợp này, baseSP của giao dịch được coi là đã gộp vào check-in (10 SP)
+                // hoặc bị bỏ qua để tránh double counting lớn, nhưng yêu cầu yêu cầu trả về baseSP=1
+                return (baseSP, bonusPP, bonusPP);
             }
 
             // Nếu giao dịch cùng ngày với LastCheckIn, hoặc cũ hơn (nhưng đã check-in ngày đó rồi)
-            // thì chỉ cộng 1 điểm SP. Lưu ý: Logic này giả định LastCheckIn luôn tăng tiến.
-            city.StabilityPoints += 1;
-            city.TotalStabilityPoints += 1; // Cộng vào tổng điểm tích lũy
+            // thì chỉ cộng 1 điểm SP + bonus PP từ Factory
+            city.StabilityPoints += baseSP;
+            city.TotalStabilityPoints += baseSP; // Cộng vào tổng điểm tích lũy
+
+            if (bonusPP > 0)
+            {
+                city.ProsperityPoints += bonusPP;
+                city.TotalProsperityPoints += bonusPP;
+            }
 
             await CheckLevelUp(city);
             await CheckBadges(userId);
             await _context.SaveChangesAsync();
+
+            return (baseSP, bonusPP, bonusPP);
         }
 
         public async Task OnGoalCompleted(int userId)
@@ -126,6 +154,20 @@ namespace SE114_MoneyApp_BE.Services
             await CheckLevelUp(city);
             await CheckBadges(userId);
             await _context.SaveChangesAsync();
+        }
+
+        public async Task<int> GetBuildingBonus(int userId, string type, int bonusPerLevel)
+        {
+            var buildings = await _context.Buildings
+                .Where(b => b.CityState!.UserId == userId && b.BuildingType.ToLower() == type.ToLower())
+                .ToListAsync();
+
+            int totalBonus = 0;
+            foreach (var b in buildings)
+            {
+                totalBonus += b.Level * bonusPerLevel;
+            }
+            return totalBonus;
         }
 
         private async Task<CityState> GetOrCreateCityState(int userId)

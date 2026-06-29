@@ -95,26 +95,53 @@ namespace SE114_MoneyApp_BE.Controllers
             var city = await _context.CityStates.FirstOrDefaultAsync(c => c.UserId == userId);
             if (city == null) return BadRequest(new { Message = "City state not initialized" });
 
-            if (userQuest.Quest!.RewardType == RewardType.SP)
+            int baseReward = userQuest.Quest!.RewardPoints;
+            int bonusPP = 0;
+            int bonusSP = 0;
+            int totalReward = baseReward;
+
+            // Nếu là thưởng PP, tính bonus PP từ Cửa hàng (Shop)
+            if (userQuest.Quest.RewardType == RewardType.PP)
             {
-                city.StabilityPoints += userQuest.Quest.RewardPoints;
-                city.TotalStabilityPoints += userQuest.Quest.RewardPoints; // Cộng vào tổng điểm tích lũy
+                bonusPP = await _gamificationService.GetBuildingBonus(userId, "shop", 50);
+                totalReward += bonusPP;
+
+                city.ProsperityPoints += totalReward;
+                city.TotalProsperityPoints += totalReward;
+
+                userQuest.IsClaimed = true;
+                await _context.SaveChangesAsync();
+
+                return Ok(new
+                {
+                    Message = "Reward claimed successfully",
+                    basePP = baseReward,
+                    bonusPP = bonusPP,
+                    totalPP = totalReward
+                });
             }
             else
             {
-                city.ProsperityPoints += userQuest.Quest.RewardPoints;
-                city.TotalProsperityPoints += userQuest.Quest.RewardPoints; // Cộng vào tổng điểm tích lũy
+                // Nếu là thưởng SP, tính bonus SP từ Cửa hàng (Shop) như mô tả trong ảnh
+                // Và đồng thời vẫn giữ bonus từ Nhà ở (House) nếu muốn,
+                // nhưng ở đây tôi ưu tiên bonus từ Shop (+10 SP) theo yêu cầu ảnh UI.
+                bonusSP = await _gamificationService.GetBuildingBonus(userId, "shop", 10);
+                totalReward += bonusSP;
+
+                city.StabilityPoints += totalReward;
+                city.TotalStabilityPoints += totalReward;
+
+                userQuest.IsClaimed = true;
+                await _context.SaveChangesAsync();
+
+                return Ok(new
+                {
+                    Message = "Reward claimed successfully",
+                    baseSP = baseReward,
+                    bonusSP = bonusSP,
+                    totalSP = totalReward
+                });
             }
-
-            userQuest.IsClaimed = true;
-            await _context.SaveChangesAsync();
-
-            return Ok(new
-            {
-                Message = "Reward claimed successfully",
-                NewSP = city.StabilityPoints,
-                NewPP = city.ProsperityPoints
-            });
         }
     }
 }

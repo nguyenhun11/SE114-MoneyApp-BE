@@ -114,8 +114,13 @@ namespace SE114_MoneyApp_BE.Controllers
                 case "park": cost = 50; useSP = true; break;
                 case "fountain": cost = 80; useSP = true; break;
                 case "statue": cost = 150; useSP = true; break;
+
+                case "house": cost = 100; useSP = false; break;
+                case "shop": cost = 300; useSP = false; break;
+                case "factory": cost = 600; useSP = false; break;
+
                 default:
-                    cost = 100; // Chi phí PP cho các công trình thông thường
+                    cost = 100; // Chi phí mặc định cho các công trình khác
                     useSP = false;
                     break;
             }
@@ -186,7 +191,7 @@ namespace SE114_MoneyApp_BE.Controllers
             int upgradeCost = 0;
 
             if (currentLevel == 1) upgradeCost = 200;
-            else if (currentLevel == 2) upgradeCost = 500;
+            else if (currentLevel == 2) upgradeCost = 400;
             else return BadRequest(new { Message = "Maximum level reached" });
 
             if (city.ProsperityPoints < upgradeCost)

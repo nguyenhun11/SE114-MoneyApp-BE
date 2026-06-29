@@ -186,10 +186,17 @@ namespace SE114_MoneyApp_BE.Controllers
             await _context.SaveChangesAsync();
 
             // Cập nhật điểm cho MoneyCity dựa trên ngày của giao dịch
-            await _gamificationService.OnTransactionAdded(userId, transaction.TransactionDate);
+            var (baseSP, bonusPP, totalPP) = await _gamificationService.OnTransactionAdded(userId, transaction.TransactionDate);
 
             var response = MapToTransactionResponse.Compile().Invoke(transaction);
-            return Ok(response);
+            return Ok(new
+            {
+                transactionId = response.Id,
+                baseSP = baseSP,
+                bonusPP = bonusPP,
+                totalPP = totalPP,
+                transaction = response
+            });
         }
 
         [HttpPut("{id:guid}")]
