@@ -113,7 +113,7 @@ namespace SE114_MoneyApp_BE.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateTransaction([FromBody] TransactionRequest request)
+        public async Task<ActionResult<TransactionResponse>> CreateTransaction([FromBody] TransactionRequest request)
         {
             var (userId, success, message) = GetCurrentUserId();
             if (!success) return Unauthorized(message);
@@ -193,7 +193,7 @@ namespace SE114_MoneyApp_BE.Controllers
         }
 
         [HttpPut("{id:guid}")]
-        public async Task<IActionResult> UpdateTransaction(Guid id, [FromBody] TransactionRequest request)
+        public async Task<ActionResult<TransactionResponse>> UpdateTransaction(Guid id, [FromBody] TransactionRequest request)
         {
             var (userId, success, message) = GetCurrentUserId();
             if (!success) return Unauthorized(message);
