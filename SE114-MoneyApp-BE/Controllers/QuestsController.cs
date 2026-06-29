@@ -98,10 +98,12 @@ namespace SE114_MoneyApp_BE.Controllers
             if (userQuest.Quest!.RewardType == RewardType.SP)
             {
                 city.StabilityPoints += userQuest.Quest.RewardPoints;
+                city.TotalStabilityPoints += userQuest.Quest.RewardPoints; // Cộng vào tổng điểm tích lũy
             }
             else
             {
                 city.ProsperityPoints += userQuest.Quest.RewardPoints;
+                city.TotalProsperityPoints += userQuest.Quest.RewardPoints; // Cộng vào tổng điểm tích lũy
             }
 
             userQuest.IsClaimed = true;

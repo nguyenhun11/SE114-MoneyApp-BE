@@ -32,6 +32,7 @@ namespace SE114_MoneyApp_BE.Services
                 }
 
                 city.StabilityPoints += 10; // Cộng 10 điểm cho check-in hàng ngày
+                city.TotalStabilityPoints += 10; // Cộng vào tổng điểm tích lũy
                 city.LastCheckIn = checkInDate;
 
                 await UpdateQuestProgress(userId, "CheckIn");
@@ -72,6 +73,7 @@ namespace SE114_MoneyApp_BE.Services
             // Nếu giao dịch cùng ngày với LastCheckIn, hoặc cũ hơn (nhưng đã check-in ngày đó rồi)
             // thì chỉ cộng 1 điểm SP. Lưu ý: Logic này giả định LastCheckIn luôn tăng tiến.
             city.StabilityPoints += 1;
+            city.TotalStabilityPoints += 1; // Cộng vào tổng điểm tích lũy
 
             await CheckLevelUp(city);
             await CheckBadges(userId);
@@ -82,6 +84,7 @@ namespace SE114_MoneyApp_BE.Services
         {
             var city = await GetOrCreateCityState(userId);
             city.ProsperityPoints += 100; // Thưởng lớn khi hoàn thành mục tiêu tiết kiệm
+            city.TotalProsperityPoints += 100; // Cộng vào tổng điểm tích lũy
 
             await UpdateQuestProgress(userId, "GoalCompleted");
             await CheckLevelUp(city);
@@ -100,7 +103,9 @@ namespace SE114_MoneyApp_BE.Services
             var city = await GetOrCreateCityState(userId);
             // Cộng điểm dựa trên số tiền tiết kiệm được so với ngân sách (ví dụ: 1 điểm cho mỗi 100k)
             int points = (int)(savedAmount / 100000);
-            city.ProsperityPoints += Math.Max(10, points);
+            int pointsToAdd = Math.Max(10, points);
+            city.ProsperityPoints += pointsToAdd;
+            city.TotalProsperityPoints += pointsToAdd; // Cộng vào tổng điểm tích lũy
 
             await UpdateQuestProgress(userId, "BudgetMaintained");
             await CheckLevelUp(city);
@@ -137,6 +142,8 @@ namespace SE114_MoneyApp_BE.Services
                     Level = 1,
                     ProsperityPoints = 0,
                     StabilityPoints = 0,
+                    TotalProsperityPoints = 0,
+                    TotalStabilityPoints = 0,
                     CreatedAt = DateTime.UtcNow
                 };
                 _context.CityStates.Add(city);
