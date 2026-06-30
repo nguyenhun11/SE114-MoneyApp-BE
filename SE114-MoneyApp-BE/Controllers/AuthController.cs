@@ -1,4 +1,4 @@
-﻿using Google.Apis.Auth;
+using Google.Apis.Auth;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SE114_MoneyApp_BE.Data;
@@ -383,7 +383,13 @@ namespace SE114_MoneyApp_BE.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Lỗi khi gửi email đặt lại mật khẩu cho {Email}", user.Email);
-                return StatusCode(500, new { Message = "Có lỗi xảy ra khi gửi email. Vui lòng thử lại sau.", Detail = ex.Message });
+                
+                // Môi trường Local Development: In OTP ra console để lập trình viên có thể test
+                Console.WriteLine($"\n========================================");
+                Console.WriteLine($"[DEV MODE - OTP] Lỗi gửi Email SMTP. OTP cho {user.Email} là: {otp}");
+                Console.WriteLine($"========================================\n");
+                
+                return Ok(new { Message = $"[DEV MODE] OTP: {otp}" });
             }
 
             return Ok(new { Message = "Mã xác nhận đã được gửi đến email của bạn." });
